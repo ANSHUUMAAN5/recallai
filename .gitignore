@@ -1,0 +1,36 @@
+# Python
+api/.venv/
+api/__pycache__/
+api/*.pyc
+api/.pytest_cache/
+
+# General Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# C++ build files
+*.o
+*.a
+*.so
+*.dylib
+
+# Compiled executables
+vector-engine/recallai-engine
+vector-engine/test_brute
+vector-engine/test_hnsw
+vector-engine/test_vector_db
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# ML / model caches
+.cache/
+.huggingface/
+vector-engine/reference/recallai-reference
