@@ -1,0 +1,3 @@
+RecallAI is a document retrieval system.
+It uses semantic embeddings and vector search.
+The system can retrieve relevant information from user documents.
