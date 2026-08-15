@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import httpx
@@ -30,6 +31,22 @@ app = FastAPI(
 VECTOR_ENGINE_URL = os.environ.get(
     "VECTOR_ENGINE_URL",
     "http://localhost:8081"
+)
+
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "ALLOWED_ORIGINS",
+        "http://localhost:3000"
+    ).split(",")
+    if origin.strip()
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -79,6 +96,61 @@ async def vector_engine_health():
         )
 
     response.raise_for_status()
+
+    return response.json()
+
+
+# =========================================================
+# GET /stats
+# =========================================================
+
+@app.get("/stats")
+async def stats():
+
+    async with httpx.AsyncClient() as client:
+
+        response = await client.get(
+            f"{VECTOR_ENGINE_URL}/stats",
+            timeout=5
+        )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+# =========================================================
+# GET /documents
+# =========================================================
+
+@app.get("/documents")
+async def list_documents():
+
+    async with httpx.AsyncClient() as client:
+
+        response = await client.get(
+            f"{VECTOR_ENGINE_URL}/documents",
+            timeout=10
+        )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+# =========================================================
+# DELETE /documents/{document_id}
+# =========================================================
+
+@app.delete("/documents/{document_id}")
+async def delete_document(document_id: int):
+
+    async with httpx.AsyncClient() as client:
+
+        response = await client.delete(
+            f"{VECTOR_ENGINE_URL}/documents/{document_id}",
+            timeout=10
+        )
 
     return response.json()
 
@@ -312,13 +384,12 @@ async def search_documents(
 
 
     # -----------------------------------------------------
-    # Return C++ response
+    # Return parsed C++ response
     # -----------------------------------------------------
 
-    return {
-        "cpp_status": response.status_code,
-        "cpp_response": response.text
-    }
+    response.raise_for_status()
+
+    return response.json()
 
 
 # =========================================================
