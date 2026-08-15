@@ -15,6 +15,14 @@ RUN pip install --no-cache-dir torch==2.13.0 \
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Bake the embedding model into the image so cold starts don't need to
+# fetch it from Hugging Face over the network — on free-tier hosts
+# with ephemeral disk, every restart is otherwise a fresh ~90MB
+# download, adding real, avoidable latency (and occasional HF rate
+# limiting since these are unauthenticated requests) on top of the
+# container's own cold-start time.
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+
 COPY api/ ./api/
 COPY ingestion/ ./ingestion/
 COPY rag/ ./rag/
