@@ -122,6 +122,7 @@ ANSWER:
     for result in results:
 
         sources.append({
+            "id": result["id"],
             "source": result["source"],
             "page": result["page"],
             "chunk": result["chunk"],

@@ -26,6 +26,7 @@ export interface UploadResult {
 }
 
 export interface Source {
+  id: number;
   source: string;
   page: number;
   chunk: number;
