@@ -33,6 +33,11 @@ VECTOR_ENGINE_URL = os.environ.get(
     "http://localhost:8081"
 )
 
+if not VECTOR_ENGINE_URL.startswith("http"):
+    # Some hosts (e.g. Render's `fromService` hostport) provide
+    # "host:port" with no scheme.
+    VECTOR_ENGINE_URL = f"http://{VECTOR_ENGINE_URL}"
+
 ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(

@@ -11,6 +11,9 @@ VECTOR_ENGINE_URL = os.environ.get(
     "http://localhost:8081",
 )
 
+if not VECTOR_ENGINE_URL.startswith("http"):
+    VECTOR_ENGINE_URL = f"http://{VECTOR_ENGINE_URL}"
+
 
 def create_document(filename: str) -> dict:
     """

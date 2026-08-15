@@ -1,0 +1,28 @@
+services:
+  - type: pserv
+    name: recallai-engine
+    runtime: docker
+    plan: free
+    dockerfilePath: ./vector-engine/Dockerfile
+    dockerContext: ./vector-engine
+
+  - type: web
+    name: recallai-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: VECTOR_ENGINE_URL
+        fromService:
+          type: pserv
+          name: recallai-engine
+          property: hostport
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash-lite
+      - key: ALLOWED_ORIGINS
+        value: http://localhost:3000

@@ -20,6 +20,12 @@ ANTHROPIC_MODEL = os.environ.get(
     "claude-sonnet-4-5",
 )
 
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get(
+    "GEMINI_MODEL",
+    "gemini-2.5-flash-lite",
+)
+
 
 def _generate_with_ollama(prompt: str) -> str:
     """
@@ -63,6 +69,30 @@ def _generate_with_claude(prompt: str) -> str:
     return message.content[0].text
 
 
+def _generate_with_gemini(prompt: str) -> str:
+    """
+    Send a prompt to the Gemini API.
+    """
+
+    response = requests.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{GEMINI_MODEL}:generateContent",
+        params={"key": GEMINI_API_KEY},
+        json={
+            "contents": [
+                {"parts": [{"text": prompt}]},
+            ],
+        },
+        timeout=120,
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    return data["candidates"][0]["content"]["parts"][0]["text"]
+
+
 def generate_answer(prompt: str) -> str:
     """
     Generate an answer using the configured LLM provider.
@@ -70,6 +100,7 @@ def generate_answer(prompt: str) -> str:
     Provider is selected via the LLM_PROVIDER env var:
       - "ollama" (default): local model via Ollama
       - "claude": hosted Claude API
+      - "gemini": hosted Gemini API
     """
 
     provider = os.environ.get(
@@ -83,7 +114,10 @@ def generate_answer(prompt: str) -> str:
     if provider == "claude":
         return _generate_with_claude(prompt)
 
+    if provider == "gemini":
+        return _generate_with_gemini(prompt)
+
     raise ValueError(
         f"Unknown LLM_PROVIDER: {provider!r}. "
-        "Use 'ollama' or 'claude'."
+        "Use 'ollama', 'claude', or 'gemini'."
     )
