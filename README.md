@@ -51,11 +51,15 @@ the uploaded documents.
 - **`rag/`** — Retrieval + grounded prompt construction + LLM call.
   Provider-agnostic: local Ollama or the hosted Claude API.
 - **`api/`** — FastAPI layer tying it all together.
+- **`frontend/`** — Next.js (App Router) + TypeScript + Tailwind UI:
+  a Dashboard (service health, document/vector counts), Documents
+  (upload/list/delete), and Ask AI (chat-style Q&A with cited sources).
 
 ## Requirements
 
 - Python 3.11+
 - A C++17 compiler (clang/g++) + CMake 3.16+
+- Node.js 20+ (for the frontend)
 - [Ollama](https://ollama.com) running locally (for the default local LLM path)
 - Docker + Docker Compose (optional, for containerized run)
 
@@ -105,7 +109,15 @@ ollama serve
 # Terminal 3 — API (from repo root, with the venv active)
 source api/.venv/bin/activate
 uvicorn api.main:app --reload
+
+# Terminal 4 — frontend
+cd frontend
+cp .env.local.example .env.local
+npm install
+npm run dev
 ```
+
+Then open `http://localhost:3000`.
 
 ### Or: run with Docker Compose
 
@@ -120,15 +132,21 @@ container reaches it via `host.docker.internal`. If you'd rather not
 run Ollama at all, set `LLM_PROVIDER=claude` and add an
 `ANTHROPIC_API_KEY` in `.env` instead.
 
+The frontend is not part of `docker-compose.yml` — run it natively
+with `npm run dev` (see above).
+
 ## API reference
 
-| Method | Path                 | Description                                  |
-|--------|----------------------|-----------------------------------------------|
-| GET    | `/health`            | API health check                              |
-| GET    | `/vector-engine/health` | Proxies health check to the C++ engine     |
-| POST   | `/documents/upload`  | Upload a PDF/TXT, chunk + embed + index it    |
-| POST   | `/search`            | Raw vector search, returns top-k chunks       |
-| POST   | `/ask`                | Full RAG: search + grounded LLM answer + sources |
+| Method | Path                    | Description                                  |
+|--------|-------------------------|-----------------------------------------------|
+| GET    | `/health`               | API health check                              |
+| GET    | `/vector-engine/health` | Proxies health check to the C++ engine        |
+| GET    | `/stats`                | Vector count                                  |
+| GET    | `/documents`            | List all documents                            |
+| DELETE | `/documents/{id}`       | Delete a document and its chunks              |
+| POST   | `/documents/upload`     | Upload a PDF/TXT, chunk + embed + index it     |
+| POST   | `/search`               | Raw vector search, returns top-k chunks        |
+| POST   | `/ask`                  | Full RAG: search + grounded LLM answer + sources |
 
 Example:
 
@@ -151,6 +169,10 @@ curl -X POST http://localhost:8000/ask \
 | `OLLAMA_MODEL`       | `qwen2.5:3b`                     | Local model to use |
 | `ANTHROPIC_API_KEY`  | *(empty)*                        | Required only if `LLM_PROVIDER=claude` |
 | `ANTHROPIC_MODEL`    | `claude-sonnet-4-5`               | Claude model to use |
+| `ALLOWED_ORIGINS`    | `http://localhost:3000`          | Comma-separated CORS origins allowed to call the API |
+
+`frontend/.env.local` uses its own variable:
+`NEXT_PUBLIC_API_URL` (default `http://localhost:8000`).
 
 ## Testing the vector engine
 
