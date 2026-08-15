@@ -7,7 +7,7 @@ Upload a PDF or TXT file, ask questions about it, get grounded answers
 with citations back to the source page/chunk — no hallucinating outside
 the uploaded documents.
 
-**Live demo**: https://frontend-anshuumaan5s-projects.vercel.app
+**Live demo**: https://recallai-frontend.onrender.com
 (free-tier hosting — see [Deploying](#deploying-free-tier) for the
 tradeoffs: uploaded documents don't persist across backend restarts,
 and the vector engine has no auth, so don't upload anything sensitive)
@@ -56,9 +56,13 @@ and the vector engine has no auth, so don't upload anything sensitive)
 - **`rag/`** — Retrieval + grounded prompt construction + LLM call.
   Provider-agnostic: local Ollama or the hosted Claude API.
 - **`api/`** — FastAPI layer tying it all together.
-- **`frontend/`** — Next.js (App Router) + TypeScript + Tailwind UI:
-  a Dashboard (service health, document/vector counts), Documents
-  (upload/list/delete), and Ask AI (chat-style Q&A with cited sources).
+- **`frontend/`** — Next.js (App Router) + TypeScript + Tailwind UI,
+  built as a static export (no Node server needed at runtime):
+  Overview (service health, document/vector counts), Documents
+  (upload/list/delete), Search (raw algorithm/metric picker), Ask AI
+  (chat-style Q&A with cited sources), Vector Lab (interactive 3D
+  view of the embedding space, PCA-projected, with real HNSW/cosine
+  nearest neighbors highlighted), and Settings.
 
 ## Requirements
 
@@ -142,11 +146,16 @@ with `npm run dev` (see above).
 
 ### Deploying (free tier)
 
-`render.yaml` deploys the vector engine and API to
-[Render](https://render.com) as a Blueprint (dashboard → New →
-Blueprint → select this repo), and the frontend deploys separately to
-[Vercel](https://vercel.com). Prod uses `LLM_PROVIDER=gemini` (free
-API tier, unlike Claude) since Render's free plan has no GPU.
+`render.yaml` deploys all three pieces to [Render](https://render.com)
+as a single Blueprint (dashboard → New → Blueprint → select this
+repo): `recallai-engine` and `recallai-api` as Docker web services,
+and `recallai-frontend` as a free static site (the frontend builds
+with `output: "export"` in `next.config.ts` — every page is
+client-rendered against the external API with no Next.js
+server-side data fetching, so a static export needs no Node server:
+no cold starts, no sleep-on-inactivity, unlike the two Docker
+services). Prod uses `LLM_PROVIDER=gemini` (free API tier, unlike
+Claude) since Render's free plan has no GPU.
 
 **Known tradeoff**: Render's free plan doesn't support private
 services, so `recallai-engine` (the C++ vector database) gets a public
@@ -164,10 +173,13 @@ a restart/redeploy.
 |--------|-------------------------|-----------------------------------------------|
 | GET    | `/health`               | API health check                              |
 | GET    | `/vector-engine/health` | Proxies health check to the C++ engine        |
+| GET    | `/config`               | Non-secret runtime info (LLM provider/model)  |
 | GET    | `/stats`                | Vector count                                  |
 | GET    | `/documents`            | List all documents                            |
 | DELETE | `/documents/{id}`       | Delete a document and its chunks              |
 | POST   | `/documents/upload`     | Upload a PDF/TXT, chunk + embed + index it     |
+| GET    | `/vectors`              | All vectors with embeddings (Vector Lab data source) |
+| POST   | `/vectors/projection`   | Corpus + optional query, PCA-reduced to 3D     |
 | POST   | `/search`               | Raw vector search, returns top-k chunks        |
 | POST   | `/ask`                  | Full RAG: search + grounded LLM answer + sources |
 
@@ -192,6 +204,8 @@ curl -X POST http://localhost:8000/ask \
 | `OLLAMA_MODEL`       | `qwen2.5:3b`                     | Local model to use |
 | `ANTHROPIC_API_KEY`  | *(empty)*                        | Required only if `LLM_PROVIDER=claude` |
 | `ANTHROPIC_MODEL`    | `claude-sonnet-4-5`               | Claude model to use |
+| `GEMINI_API_KEY`     | *(empty)*                        | Required only if `LLM_PROVIDER=gemini` — free key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| `GEMINI_MODEL`       | `gemini-flash-lite-latest`       | Gemini model to use |
 | `ALLOWED_ORIGINS`    | `http://localhost:3000`          | Comma-separated CORS origins allowed to call the API |
 
 `frontend/.env.local` uses its own variable:
