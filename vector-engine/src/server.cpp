@@ -467,6 +467,130 @@ int main() {
 
 
     // =====================================================
+    // GET /vectors
+    //
+    // Return every vector record, including its embedding.
+    //
+    // Used for embedding-space visualization — not paginated,
+    // fine for demo-scale datasets.
+    // =====================================================
+
+    server.Get(
+        "/vectors",
+        [&](const httplib::Request&,
+            httplib::Response& res) {
+
+            try {
+
+                auto records =
+                    db.getAllVectors();
+
+
+                std::ostringstream json;
+
+                json << "{";
+
+                json << "\"vectors\":[";
+
+
+                for (
+                    size_t i = 0;
+                    i < records.size();
+                    i++
+                ) {
+
+                    if (i > 0) {
+                        json << ",";
+                    }
+
+
+                    const auto& record =
+                        records[i];
+
+
+                    json << "{";
+
+                    json << "\"id\":"
+                         << record.id
+                         << ",";
+
+                    json << "\"document_id\":"
+                         << record.documentId
+                         << ",";
+
+                    json << "\"text\":\""
+                         << escapeJson(record.text)
+                         << "\",";
+
+                    json << "\"source\":\""
+                         << escapeJson(record.source)
+                         << "\",";
+
+                    json << "\"page\":"
+                         << record.page
+                         << ",";
+
+                    json << "\"chunk\":"
+                         << record.chunk
+                         << ",";
+
+                    json << "\"vector\":[";
+
+                    for (
+                        size_t j = 0;
+                        j < record.vector.size();
+                        j++
+                    ) {
+
+                        if (j > 0) {
+                            json << ",";
+                        }
+
+                        json << record.vector[j];
+                    }
+
+                    json << "]";
+
+                    json << "}";
+                }
+
+
+                json << "]";
+
+                json << "}";
+
+
+                res.set_content(
+                    json.str(),
+                    "application/json"
+                );
+            }
+
+            catch (const std::exception& e) {
+
+                res.status = 400;
+
+                std::ostringstream json;
+
+                json << "{";
+
+                json << "\"error\":\""
+                     << escapeJson(e.what())
+                     << "\"";
+
+                json << "}";
+
+
+                res.set_content(
+                    json.str(),
+                    "application/json"
+                );
+            }
+        }
+    );
+
+
+    // =====================================================
     // GET /documents/:id
     //
     // Return one document and its chunks.

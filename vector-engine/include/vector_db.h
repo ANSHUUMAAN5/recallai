@@ -70,6 +70,8 @@ public:
         int id
     ) const;
 
+    std::vector<VectorRecord> getAllVectors() const;
+
 
     size_t size() const;
 

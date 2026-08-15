@@ -356,6 +356,16 @@ std::vector<DocumentRecord> VectorDB::getDocuments() const {
 
 
 // =========================================================
+// Get All Vectors
+// =========================================================
+
+std::vector<VectorRecord> VectorDB::getAllVectors() const {
+
+    return records;
+}
+
+
+// =========================================================
 // Next Document ID
 // =========================================================
 

@@ -37,6 +37,50 @@ export interface AskResult {
   sources: Source[];
 }
 
+export interface Config {
+  llm_provider: string;
+  llm_model: string;
+}
+
+export interface SearchResult {
+  id: number;
+  distance: number;
+  document_id: number;
+  text: string;
+  source: string;
+  page: number;
+  chunk: number;
+}
+
+export interface SearchResponse {
+  algorithm: string;
+  metric: string;
+  results: SearchResult[];
+}
+
+export interface ProjectionPoint {
+  id: number;
+  document_id: number;
+  text: string;
+  source: string;
+  page: number;
+  chunk: number;
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface ProjectionCoord {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface ProjectionResponse {
+  points: ProjectionPoint[];
+  query: ProjectionCoord | null;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, init);
 
@@ -82,5 +126,30 @@ export function ask(question: string, k = 3): Promise<AskResult> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question, k }),
+  });
+}
+
+export function getConfig(): Promise<Config> {
+  return request<Config>("/config");
+}
+
+export function search(
+  query: string,
+  k = 5,
+  algorithm = "hnsw",
+  metric = "cosine"
+): Promise<SearchResponse> {
+  return request<SearchResponse>("/search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, k, algorithm, metric }),
+  });
+}
+
+export function getVectorProjection(query?: string): Promise<ProjectionResponse> {
+  return request<ProjectionResponse>("/vectors/projection", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: query || null }),
   });
 }

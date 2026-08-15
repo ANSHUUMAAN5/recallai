@@ -3,12 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import httpx
+import numpy as np
 import os
 import tempfile
 
 from dotenv import load_dotenv
 
 from rag.rag_pipeline import answer_question
+from rag.llm_client import OLLAMA_MODEL, ANTHROPIC_MODEL, GEMINI_MODEL
 from ingestion.pipeline import ingest_document
 from ingestion.embedding import generate_embedding
 
@@ -73,6 +75,11 @@ class AskRequest(BaseModel):
     k: int = 3
 
 
+class ProjectionRequest(BaseModel):
+
+    query: str | None = None
+
+
 # =========================================================
 # GET /health
 # =========================================================
@@ -103,6 +110,33 @@ async def vector_engine_health():
     response.raise_for_status()
 
     return response.json()
+
+
+# =========================================================
+# GET /config
+#
+# Non-secret runtime info for the frontend (status pill,
+# Settings page).
+# =========================================================
+
+@app.get("/config")
+async def config():
+
+    provider = os.environ.get(
+        "LLM_PROVIDER",
+        "ollama"
+    ).lower()
+
+    model = {
+        "ollama": OLLAMA_MODEL,
+        "claude": ANTHROPIC_MODEL,
+        "gemini": GEMINI_MODEL,
+    }.get(provider, "")
+
+    return {
+        "llm_provider": provider,
+        "llm_model": model,
+    }
 
 
 # =========================================================
@@ -158,6 +192,137 @@ async def delete_document(document_id: int):
         )
 
     return response.json()
+
+
+# =========================================================
+# GET /vectors
+# =========================================================
+
+@app.get("/vectors")
+async def list_vectors():
+
+    async with httpx.AsyncClient() as client:
+
+        response = await client.get(
+            f"{VECTOR_ENGINE_URL}/vectors",
+            timeout=15
+        )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+# =========================================================
+# POST /vectors/projection
+#
+# Reduce every stored embedding (384-D) down to 3-D via PCA,
+# for the Vector Lab visualization.
+#
+# The PCA basis is fit on the corpus only. If a query is
+# given, it's embedded and projected through that same basis
+# (never re-fit including the query) so query/corpus
+# positions stay comparable.
+# =========================================================
+
+@app.post("/vectors/projection")
+async def vectors_projection(
+    request: ProjectionRequest
+):
+
+    async with httpx.AsyncClient() as client:
+
+        response = await client.get(
+            f"{VECTOR_ENGINE_URL}/vectors",
+            timeout=15
+        )
+
+    response.raise_for_status()
+
+    vectors = response.json()["vectors"]
+
+    if not vectors:
+
+        return {
+            "points": [],
+            "query": None,
+        }
+
+
+    # -----------------------------------------------------
+    # Fit PCA on the corpus
+    # -----------------------------------------------------
+
+    matrix = np.array(
+        [record["vector"] for record in vectors],
+        dtype=np.float64,
+    )
+
+    mean = matrix.mean(axis=0)
+
+    centered = matrix - mean
+
+    num_components = min(3, centered.shape[0], centered.shape[1])
+
+    _, _, components = np.linalg.svd(
+        centered,
+        full_matrices=False,
+    )
+
+    basis = components[:num_components]
+
+    coords = centered @ basis.T
+
+
+    # -----------------------------------------------------
+    # Build points
+    # -----------------------------------------------------
+
+    points = []
+
+    for record, coord in zip(vectors, coords):
+
+        point = {
+            "id": record["id"],
+            "document_id": record["document_id"],
+            "text": record["text"],
+            "source": record["source"],
+            "page": record["page"],
+            "chunk": record["chunk"],
+            "x": float(coord[0]),
+            "y": float(coord[1]) if num_components > 1 else 0.0,
+            "z": float(coord[2]) if num_components > 2 else 0.0,
+        }
+
+        points.append(point)
+
+
+    # -----------------------------------------------------
+    # Project the query through the same basis
+    # -----------------------------------------------------
+
+    query_point = None
+
+    if request.query:
+
+        query_vector = np.array(
+            generate_embedding(request.query),
+            dtype=np.float64,
+        )
+
+        query_coord = (query_vector - mean) @ basis.T
+
+        query_point = {
+            "x": float(query_coord[0]),
+            "y": float(query_coord[1]) if num_components > 1 else 0.0,
+            "z": float(query_coord[2]) if num_components > 2 else 0.0,
+        }
+
+
+    return {
+        "points": points,
+        "query": query_point,
+    }
 
 
 # =========================================================

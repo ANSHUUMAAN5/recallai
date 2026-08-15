@@ -31,4 +31,17 @@ services:
       - key: GEMINI_MODEL
         value: gemini-flash-lite-latest
       - key: ALLOWED_ORIGINS
-        value: https://frontend-anshuumaan5s-projects.vercel.app,https://frontend-bice-psi-uhisolrkwv.vercel.app,http://localhost:3000
+        value: https://recallai-frontend.onrender.com,http://localhost:3000
+
+  # Static export (next.config.ts: output: "export") — no Node
+  # server needed, so this is a free static site rather than a web
+  # service: no cold starts, no sleep-on-inactivity.
+  - type: web
+    name: recallai-frontend
+    runtime: static
+    rootDir: ./frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./out
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://recallai-api.onrender.com

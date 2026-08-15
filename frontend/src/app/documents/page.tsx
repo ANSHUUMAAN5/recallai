@@ -66,7 +66,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8 px-6 py-8">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Documents</h1>
@@ -75,7 +75,7 @@ export default function DocumentsPage() {
           </p>
         </div>
 
-        <label className="cursor-pointer rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-white">
+        <label className="cursor-pointer rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-neutral-950 hover:bg-cyan-300">
           {uploading ? "Uploading..." : "Upload document"}
           <input
             ref={fileInputRef}

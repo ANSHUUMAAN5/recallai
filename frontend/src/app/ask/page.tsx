@@ -41,7 +41,7 @@ export default function AskPage() {
   }
 
   return (
-    <div className="flex h-full flex-col space-y-6">
+    <div className="mx-auto flex h-full max-w-5xl flex-col space-y-6 px-6 py-8">
       <div>
         <h1 className="text-2xl font-semibold">Ask AI</h1>
         <p className="mt-1 text-neutral-400">
@@ -107,7 +107,7 @@ export default function AskPage() {
         <button
           type="submit"
           disabled={loading || !question.trim()}
-          className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-neutral-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Ask
         </button>
