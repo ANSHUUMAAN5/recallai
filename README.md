@@ -135,6 +135,24 @@ run Ollama at all, set `LLM_PROVIDER=claude` and add an
 The frontend is not part of `docker-compose.yml` — run it natively
 with `npm run dev` (see above).
 
+### Deploying (free tier)
+
+`render.yaml` deploys the vector engine and API to
+[Render](https://render.com) as a Blueprint (dashboard → New →
+Blueprint → select this repo), and the frontend deploys separately to
+[Vercel](https://vercel.com). Prod uses `LLM_PROVIDER=gemini` (free
+API tier, unlike Claude) since Render's free plan has no GPU.
+
+**Known tradeoff**: Render's free plan doesn't support private
+services, so `recallai-engine` (the C++ vector database) gets a public
+URL like any other free-tier service. It has **no built-in
+authentication** — anyone with the URL can read, insert, or delete
+data. Acceptable for a demo with non-sensitive content; if this
+becomes a real product, add an auth header check to
+`vector-engine/src/server.cpp` before relying on it. Free-tier
+services also have ephemeral disk, so uploaded documents don't survive
+a restart/redeploy.
+
 ## API reference
 
 | Method | Path                    | Description                                  |

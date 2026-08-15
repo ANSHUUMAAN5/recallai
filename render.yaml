@@ -1,5 +1,9 @@
 services:
-  - type: pserv
+  # NOTE: this is a "web" (public) service, not "pserv" (private),
+  # because Render's free plan doesn't support private services.
+  # It has no built-in authentication — accepted tradeoff for a demo
+  # deployment, see README for details.
+  - type: web
     name: recallai-engine
     runtime: docker
     plan: free
@@ -15,7 +19,7 @@ services:
     envVars:
       - key: VECTOR_ENGINE_URL
         fromService:
-          type: pserv
+          type: web
           name: recallai-engine
           property: hostport
       - key: LLM_PROVIDER
