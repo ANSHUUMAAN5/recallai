@@ -31,4 +31,4 @@ services:
       - key: GEMINI_MODEL
         value: gemini-2.5-flash-lite
       - key: ALLOWED_ORIGINS
-        value: http://localhost:3000
+        value: https://frontend-anshuumaan5s-projects.vercel.app,https://frontend-bice-psi-uhisolrkwv.vercel.app,http://localhost:3000
