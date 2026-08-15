@@ -1,6 +1,8 @@
 #include "brute_force.h"
-#include <iostream>
+#include "distance.h"
 
+#include <iostream>
+#include <vector>
 int main() {
     std::vector<std::vector<float>> vectors = {
         {1.0f, 0.0f},
@@ -12,7 +14,12 @@ int main() {
 
     BruteForce searcher;
 
-    auto results = searcher.search(vectors, query, 2);
+    auto results = searcher.search(
+        vectors,
+        query,
+        2,
+        DistanceMetric::Cosine
+    );
 
     for (const auto& result : results) {
         std::cout << "ID: " << result.second

@@ -1,85 +1,176 @@
+from pathlib import Path
+
 from ingestion.document_loader import load_text_file
+from ingestion.pdf_loader import load_pdf
 from ingestion.chunker import chunk_text
+from ingestion.pdf_chunker import chunk_pdf_pages
 from ingestion.embedding import generate_embedding
-from ingestion.vector_client import insert_vector
+
+from ingestion.vector_client import (
+    create_document,
+    get_next_id,
+    insert_vector,
+)
 
 
 def ingest_document(
     file_path: str,
     source: str | None = None,
-    page: int = 1,
-    starting_id: int = 1000,
 ):
     """
-    Load a text document, split it into chunks, generate
-    embeddings, and store each chunk in the C++ Vector Engine.
+    Ingest a TXT or PDF document into the C++ Vector Engine.
+
+    Pipeline:
+
+        document
+            ↓
+        create DocumentRecord
+            ↓
+        text extraction
+            ↓
+        chunking
+            ↓
+        384-D embeddings
+            ↓
+        VectorRecords
+            ↓
+        C++ VectorDB
+            ↓
+        persistent vectors.db
     """
 
-    # 1. Load document
-    text = load_text_file(file_path)
+    path = Path(file_path)
 
-    # 2. Split document into chunks
-    chunks = chunk_text(
-        text,
-        chunk_size=500,
-        overlap=50,
+    # -------------------------------------------------
+    # Validate file
+    # -------------------------------------------------
+
+    if not path.exists():
+        raise FileNotFoundError(
+            f"File not found: {file_path}"
+        )
+
+    if source is None:
+        source = path.name
+
+    all_chunks = []
+
+    # -------------------------------------------------
+    # TXT
+    # -------------------------------------------------
+
+    if path.suffix.lower() == ".txt":
+
+        text = load_text_file(
+            str(path)
+        )
+
+        text_chunks = chunk_text(
+            text,
+            chunk_size=500,
+            overlap=50,
+        )
+
+        for index, chunk in enumerate(
+            text_chunks,
+            start=1,
+        ):
+
+            all_chunks.append({
+                "page": 1,
+                "chunk": index,
+                "text": chunk,
+            })
+
+    # -------------------------------------------------
+    # PDF
+    # -------------------------------------------------
+
+    elif path.suffix.lower() == ".pdf":
+
+        pages = load_pdf(
+            str(path)
+        )
+
+        all_chunks = chunk_pdf_pages(
+            pages,
+            chunk_size=500,
+            overlap=50,
+        )
+
+    # -------------------------------------------------
+    # Unsupported file
+    # -------------------------------------------------
+
+    else:
+
+        raise ValueError(
+            "Unsupported file type. "
+            "Use .txt or .pdf."
+        )
+
+    # -------------------------------------------------
+    # Validate extracted content
+    # -------------------------------------------------
+
+    if not all_chunks:
+
+        raise ValueError(
+            "Document contains no usable text."
+        )
+
+    # -------------------------------------------------
+    # Create Document
+    #
+    # This happens BEFORE inserting chunks.
+    # -------------------------------------------------
+
+    document = create_document(
+        filename=source
     )
 
-    if not chunks:
-        raise ValueError("Document contains no usable text.")
+    document_id = int(
+        document["id"]
+    )
 
-    # Use filename as the default source
-    if source is None:
-        source = file_path
+    # -------------------------------------------------
+    # Get first available vector ID
+    # -------------------------------------------------
+
+    next_id = get_next_id()
 
     inserted = []
 
-    # 3. Process each chunk
-    for index, chunk in enumerate(chunks):
+    # -------------------------------------------------
+    # Generate embeddings + insert vectors
+    # -------------------------------------------------
 
-        # 4. Generate 384-D embedding
-        embedding = generate_embedding(chunk)
+    for index, item in enumerate(
+        all_chunks
+    ):
 
-        # 5. Generate unique vector ID
-        vector_id = starting_id + index
-
-        # 6. Store in C++ Vector Engine
-        response = insert_vector(
-            vector_id=vector_id,
-            vector=embedding,
-            text=chunk,
-            source=source,
-            page=page,
-            chunk=index + 1,
+        embedding = generate_embedding(
+            item["text"]
         )
 
-        if response.status_code != 200:
-            raise RuntimeError(
-                f"Failed to insert chunk {index + 1}: "
-                f"{response.status_code} {response.text}"
-            )
+        vector_id = next_id + index
+
+        response = insert_vector(
+            vector_id=vector_id,
+            document_id=document_id,
+            vector=embedding,
+            text=item["text"],
+            source=source,
+            page=item["page"],
+            chunk=item["chunk"],
+        )
 
         inserted.append({
             "id": vector_id,
-            "chunk": index + 1,
-            "text": chunk,
+            "document_id": document_id,
+            "page": item["page"],
+            "chunk": item["chunk"],
+            "text": item["text"],
         })
 
     return inserted
-
-
-if __name__ == "__main__":
-
-    results = ingest_document(
-        "examples/demo.txt",
-        source="demo.txt",
-        starting_id=1000,
-    )
-
-    print(f"Inserted {len(results)} chunks.")
-
-    for result in results:
-        print(
-            f"ID={result['id']} "
-            f"Chunk={result['chunk']}"
-        )

@@ -21,6 +21,15 @@ vector-engine/test_brute
 vector-engine/test_hnsw
 vector-engine/test_vector_db
 
+# CMake build output
+vector-engine/build/
+
+# Persisted vector DB data
+vector-engine/data/
+
+# Environment variables
+.env
+
 # macOS
 .DS_Store
 

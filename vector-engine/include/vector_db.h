@@ -4,6 +4,8 @@
 #include "kd_tree.h"
 #include "hnsw.h"
 #include "vector_record.h"
+#include "document_record.h"
+#include "persistence.h"
 
 #include <cstddef>
 #include <string>
@@ -11,12 +13,41 @@
 #include <vector>
 
 class VectorDB {
+
 public:
 
     VectorDB(int dimensions);
 
+
+    // =====================================================
+    // Documents
+    // =====================================================
+
+    int addDocument(
+        const std::string& filename,
+        const std::string& uploadTime
+    );
+
+    bool deleteDocument(
+        int documentId
+    );
+
+    const DocumentRecord* getDocument(
+        int documentId
+    ) const;
+
+    std::vector<DocumentRecord> getDocuments() const;
+
+    int nextDocumentId() const;
+
+
+    // =====================================================
+    // Vectors
+    // =====================================================
+
     void insert(
         int id,
+        int documentId,
         const std::vector<float>& vector,
         const std::string& text,
         const std::string& source,
@@ -26,6 +57,7 @@ public:
 
     bool erase(int id);
 
+
     std::vector<std::pair<float, int>> search(
         const std::vector<float>& query,
         int k,
@@ -33,22 +65,54 @@ public:
         const std::string& metric = "cosine"
     );
 
-    const VectorRecord* get(int id) const;
+
+    const VectorRecord* get(
+        int id
+    ) const;
+
 
     size_t size() const;
+
+    int nextId() const;
+
 
 private:
 
     int dimensions;
 
-    // Complete stored records.
+
+    // =====================================================
+    // Documents
+    // =====================================================
+
+    std::vector<DocumentRecord> documents;
+
+
+    // =====================================================
+    // Vector records
+    // =====================================================
+
     std::vector<VectorRecord> records;
 
-    // Actual user-provided IDs.
-    // ids[i] corresponds to records[i].
+
+    // Actual vector IDs
     std::vector<int> ids;
 
+
+    // =====================================================
+    // Search indexes
+    // =====================================================
+
     BruteForce bruteForce;
+
     KDTree kdTree;
+
     HNSW hnsw;
+
+
+    // =====================================================
+    // Persistence
+    // =====================================================
+
+    std::string persistenceFile;
 };

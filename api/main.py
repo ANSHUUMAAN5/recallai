@@ -1,8 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
-import httpx
 
-from sentence_transformers import SentenceTransformer
+import httpx
+import os
+import tempfile
+
+from dotenv import load_dotenv
+
+from rag.rag_pipeline import answer_question
+from ingestion.pipeline import ingest_document
+from ingestion.embedding import generate_embedding
+
+load_dotenv()
 
 
 # =========================================================
@@ -18,24 +27,10 @@ app = FastAPI(
 # Configuration
 # =========================================================
 
-VECTOR_ENGINE_URL = "http://localhost:8081"
-
-EMBEDDING_MODEL_NAME = (
-    "sentence-transformers/all-MiniLM-L6-v2"
+VECTOR_ENGINE_URL = os.environ.get(
+    "VECTOR_ENGINE_URL",
+    "http://localhost:8081"
 )
-
-
-# =========================================================
-# Embedding Model
-# =========================================================
-
-print("Loading embedding model...")
-
-model = SentenceTransformer(
-    EMBEDDING_MODEL_NAME
-)
-
-print("Embedding model loaded.")
 
 
 # =========================================================
@@ -43,10 +38,17 @@ print("Embedding model loaded.")
 # =========================================================
 
 class SearchRequest(BaseModel):
+
     query: str
     k: int = 5
     algorithm: str = "hnsw"
     metric: str = "cosine"
+
+
+class AskRequest(BaseModel):
+
+    question: str
+    k: int = 3
 
 
 # =========================================================
@@ -72,132 +74,184 @@ async def vector_engine_health():
     async with httpx.AsyncClient() as client:
 
         response = await client.get(
-            f"{VECTOR_ENGINE_URL}/health"
+            f"{VECTOR_ENGINE_URL}/health",
+            timeout=5
         )
+
+    response.raise_for_status()
 
     return response.json()
 
 
 # =========================================================
-# POST /documents
+# POST /documents/upload
 #
-# Creates a demo document,
-# generates a 384-D embedding,
-# and sends it to the C++ Vector Engine.
+# User uploads PDF/TXT
+#
+# Flow:
+#
+# PDF/TXT
+#    ↓
+# FastAPI
+#    ↓
+# Temporary file
+#    ↓
+# ingestion.pipeline
+#    ↓
+# Create Document
+#    ↓
+# Extract text
+#    ↓
+# Chunk
+#    ↓
+# Embeddings
+#    ↓
+# C++ VectorDB
+#    ↓
+# Persistent vectors.db
 # =========================================================
 
-@app.post("/documents")
-async def add_document():
+@app.post("/documents/upload")
+async def upload_document(
+    file: UploadFile = File(...)
+):
 
     # -----------------------------------------------------
-    # Demo document
+    # Validate filename
     # -----------------------------------------------------
 
-    document_id = 100
+    if not file.filename:
 
-    text = (
-        "RecallAI is a vector search and "
-        "retrieval system."
-    )
-
-    source = "demo.txt"
-
-    page = 1
-
-    chunk = 1
+        return {
+            "error": "Filename is required"
+        }
 
 
     # -----------------------------------------------------
-    # Generate embedding
+    # Get extension
     # -----------------------------------------------------
 
-    embedding = model.encode(
-        text
-    )
-
-
-    # NumPy array -> Python list
-    vector = embedding.tolist()
+    extension = os.path.splitext(
+        file.filename
+    )[1].lower()
 
 
     # -----------------------------------------------------
-    # Validate dimension
+    # Validate file type
     # -----------------------------------------------------
 
-    if len(vector) != 384:
+    if extension not in [".pdf", ".txt"]:
 
-        raise ValueError(
-            f"Expected 384-dimensional embedding, "
-            f"got {len(vector)}"
+        return {
+            "error": (
+                "Only PDF and TXT files are supported"
+            )
+        }
+
+
+    temp_path = None
+
+
+    try:
+
+        # -------------------------------------------------
+        # Save uploaded file temporarily
+        # -------------------------------------------------
+
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=extension
+        ) as temp_file:
+
+            temp_path = temp_file.name
+
+            contents = await file.read()
+
+            temp_file.write(contents)
+
+
+        # -------------------------------------------------
+        # Run ingestion pipeline
+        #
+        # The pipeline now:
+        #
+        # 1. Creates DocumentRecord
+        # 2. Extracts text
+        # 3. Creates chunks
+        # 4. Generates embeddings
+        # 5. Inserts VectorRecords
+        # -------------------------------------------------
+
+        results = ingest_document(
+            file_path=temp_path,
+            source=file.filename
         )
 
 
-    # -----------------------------------------------------
-    # Convert vector to comma-separated string
-    #
-    # IMPORTANT:
-    # This goes into the HTTP BODY.
-    # It does NOT go into the URL.
-    # -----------------------------------------------------
+        # -------------------------------------------------
+        # Get document ID
+        # -------------------------------------------------
 
-    vector_string = ",".join(
-        str(value)
-        for value in vector
-    )
+        document_id = None
 
+        if results:
 
-    # -----------------------------------------------------
-    # Metadata only
-    # -----------------------------------------------------
-
-    params = {
-        "id": document_id,
-        "text": text,
-        "source": source,
-        "page": page,
-        "chunk": chunk
-    }
+            document_id = results[0].get(
+                "document_id"
+            )
 
 
-    # -----------------------------------------------------
-    # Send to C++ Vector Engine
-    # -----------------------------------------------------
+        # -------------------------------------------------
+        # Return result
+        # -------------------------------------------------
 
-    async with httpx.AsyncClient() as client:
+        return {
+            "status": "success",
+            "document_id": document_id,
+            "filename": file.filename,
+            "chunks_inserted": len(results),
 
-        response = await client.post(
-            f"{VECTOR_ENGINE_URL}/insert",
+            "chunks": [
+                {
+                    "id": result["id"],
+                    "document_id": result["document_id"],
+                    "page": result["page"],
+                    "chunk": result["chunk"]
+                }
 
-            # Small metadata in URL
-            params=params,
-
-            # Large 384-D vector in BODY
-            content=vector_string
-        )
+                for result in results
+            ]
+        }
 
 
-    # -----------------------------------------------------
-    # Return C++ response
-    # -----------------------------------------------------
+    finally:
 
-    return {
-        "cpp_status": response.status_code,
-        "cpp_response": response.text
-    }
+        # -------------------------------------------------
+        # Remove temporary file
+        # -------------------------------------------------
+
+        if (
+            temp_path
+            and os.path.exists(temp_path)
+        ):
+
+            os.remove(temp_path)
 
 
 # =========================================================
 # POST /search
 #
 # User query
-#      ↓
+#    ↓
 # MiniLM
-#      ↓
+#    ↓
 # 384-D embedding
-#      ↓
-# C++ HNSW
-#      ↓
-# nearest documents
+#    ↓
+# C++ Vector Engine
+#    ↓
+# HNSW / KDTree / BruteForce
+#    ↓
+# Relevant chunks
 # =========================================================
 
 @app.post("/search")
@@ -206,16 +260,12 @@ async def search_documents(
 ):
 
     # -----------------------------------------------------
-    # Generate embedding for user's query
+    # Generate embedding
     # -----------------------------------------------------
 
-    embedding = model.encode(
+    query_vector = generate_embedding(
         request.query
     )
-
-
-    # NumPy array -> Python list
-    query_vector = embedding.tolist()
 
 
     # -----------------------------------------------------
@@ -225,13 +275,13 @@ async def search_documents(
     if len(query_vector) != 384:
 
         raise ValueError(
-            f"Expected 384-dimensional query embedding, "
+            "Expected 384-dimensional query embedding, "
             f"got {len(query_vector)}"
         )
 
 
     # -----------------------------------------------------
-    # Convert embedding to comma-separated string
+    # Convert vector to string
     # -----------------------------------------------------
 
     query_string = ",".join(
@@ -241,20 +291,7 @@ async def search_documents(
 
 
     # -----------------------------------------------------
-    # Send search request to C++ Vector Engine
-    #
-    # IMPORTANT:
-    #
-    # k
-    # algorithm
-    # metric
-    #
-    # go into URL parameters.
-    #
-    # The 384-D query vector goes ONLY into
-    # the HTTP request BODY.
-    #
-    # DO NOT put query_string into params.
+    # Send to C++ Vector Engine
     # -----------------------------------------------------
 
     async with httpx.AsyncClient() as client:
@@ -268,19 +305,50 @@ async def search_documents(
                 "metric": request.metric
             },
 
-            content=query_string
+            content=query_string,
+
+            timeout=30
         )
 
 
     # -----------------------------------------------------
     # Return C++ response
-    #
-    # We intentionally use response.text here while
-    # debugging so a non-JSON C++ response doesn't cause
-    # another Python 500 error.
     # -----------------------------------------------------
 
     return {
         "cpp_status": response.status_code,
         "cpp_response": response.text
     }
+
+
+# =========================================================
+# POST /ask
+#
+# Full RAG pipeline
+#
+# Question
+#    ↓
+# MiniLM
+#    ↓
+# Vector Search
+#    ↓
+# Relevant chunks
+#    ↓
+# Context
+#    ↓
+# Ollama Qwen
+#    ↓
+# Grounded answer
+# =========================================================
+
+@app.post("/ask")
+async def ask_question(
+    request: AskRequest
+):
+
+    result = answer_question(
+        question=request.question,
+        k=request.k
+    )
+
+    return result

@@ -1,0 +1,9 @@
+build/
+data/
+reference/
+*.o
+recallai-engine
+test_brute
+test_hnsw
+test_vector_db
+.DS_Store

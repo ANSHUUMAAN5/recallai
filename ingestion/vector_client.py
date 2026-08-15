@@ -1,71 +1,99 @@
-import httpx
+import os
 
-from ingestion.embedding import generate_embedding
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-VECTOR_ENGINE_URL = "http://localhost:8081"
+VECTOR_ENGINE_URL = os.environ.get(
+    "VECTOR_ENGINE_URL",
+    "http://localhost:8081",
+)
+
+
+def create_document(filename: str) -> dict:
+    """
+    Create a DocumentRecord in the C++ Vector Engine.
+
+    Returns:
+        {
+            "id": 1,
+            "filename": "...",
+            "upload_time": "...",
+            "chunks": 0
+        }
+    """
+
+    response = requests.post(
+        f"{VECTOR_ENGINE_URL}/documents",
+        params={
+            "filename": filename,
+        },
+        timeout=10,
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    return data["document"]
+
+
+def get_next_id() -> int:
+    """
+    Ask the C++ Vector Engine for the next vector ID.
+    """
+
+    response = requests.get(
+        f"{VECTOR_ENGINE_URL}/next-id",
+        timeout=5,
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    return int(data["next_id"])
 
 
 def insert_vector(
     vector_id: int,
+    document_id: int,
     vector: list[float],
     text: str,
-    source: str = "",
-    page: int = 1,
-    chunk: int = 1,
+    source: str,
+    page: int,
+    chunk: int,
 ):
     """
-    Insert a 384-dimensional vector into the C++ Vector Engine.
-
-    The vector is sent in the HTTP request body rather than
-    the URL because a 384-dimensional embedding is too large
-    for a URL.
+    Insert one embedded chunk into the C++ Vector Engine.
     """
-
-    if len(vector) != 384:
-        raise ValueError(
-            f"Expected 384-dimensional vector, got {len(vector)}"
-        )
 
     params = {
         "id": vector_id,
+        "document_id": document_id,
         "text": text,
         "source": source,
         "page": page,
         "chunk": chunk,
     }
 
-    vector_body = ",".join(map(str, vector))
+    vector_body = ",".join(
+        str(value)
+        for value in vector
+    )
 
-    response = httpx.post(
+    response = requests.post(
         f"{VECTOR_ENGINE_URL}/insert",
         params=params,
-        content=vector_body,
+        data=vector_body,
         headers={
-            "Content-Type": "text/plain"
+            "Content-Type": "text/plain",
         },
-        timeout=30.0,
+        timeout=10,
     )
 
-    return response
+    response.raise_for_status()
 
-
-if __name__ == "__main__":
-
-    text = "Vector client test using semantic embeddings."
-
-    vector = generate_embedding(text)
-
-    print("Embedding dimensions:", len(vector))
-
-    response = insert_vector(
-        vector_id=999,
-        vector=vector,
-        text=text,
-        source="test.txt",
-        page=1,
-        chunk=1,
-    )
-
-    print("Status:", response.status_code)
-    print("Response:", response.text)
+    return response.json()

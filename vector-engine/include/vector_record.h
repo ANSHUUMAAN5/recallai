@@ -5,8 +5,11 @@
 
 struct VectorRecord {
 
-    // Unique ID of this vector record
+    // Unique vector/chunk ID
     int id;
+
+    // Parent document ID
+    int documentId;
 
     // Embedding vector
     std::vector<float> vector;
@@ -14,12 +17,12 @@ struct VectorRecord {
     // Original text/chunk
     std::string text;
 
-    // Source document name
+    // Source filename
     std::string source;
 
-    // Page number in the source document
+    // Page number
     int page;
 
-    // Chunk number within the document
+    // Chunk number
     int chunk;
 };
