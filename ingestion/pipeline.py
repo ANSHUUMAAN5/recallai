@@ -8,6 +8,7 @@ from ingestion.embedding import generate_embeddings_batch
 
 from ingestion.vector_client import (
     create_document,
+    delete_document,
     get_next_id,
     insert_vector,
 )
@@ -150,30 +151,44 @@ def ingest_document(
         [item["text"] for item in all_chunks]
     )
 
-    for index, item in enumerate(
-        all_chunks
-    ):
+    # If chunk insertion fails partway (e.g. the vector engine
+    # restarts mid-upload, which happens periodically on free-tier
+    # hosting), the document record created above would otherwise be
+    # left behind with zero or partial chunks — a broken entry stuck
+    # in the library. Clean it up and re-raise instead.
 
-        embedding = embeddings[index]
+    try:
 
-        vector_id = next_id + index
+        for index, item in enumerate(
+            all_chunks
+        ):
 
-        response = insert_vector(
-            vector_id=vector_id,
-            document_id=document_id,
-            vector=embedding,
-            text=item["text"],
-            source=source,
-            page=item["page"],
-            chunk=item["chunk"],
-        )
+            embedding = embeddings[index]
 
-        inserted.append({
-            "id": vector_id,
-            "document_id": document_id,
-            "page": item["page"],
-            "chunk": item["chunk"],
-            "text": item["text"],
-        })
+            vector_id = next_id + index
+
+            response = insert_vector(
+                vector_id=vector_id,
+                document_id=document_id,
+                vector=embedding,
+                text=item["text"],
+                source=source,
+                page=item["page"],
+                chunk=item["chunk"],
+            )
+
+            inserted.append({
+                "id": vector_id,
+                "document_id": document_id,
+                "page": item["page"],
+                "chunk": item["chunk"],
+                "text": item["text"],
+            })
+
+    except Exception:
+
+        delete_document(document_id)
+
+        raise
 
     return inserted

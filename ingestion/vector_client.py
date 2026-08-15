@@ -43,6 +43,19 @@ def create_document(filename: str) -> dict:
     return data["document"]
 
 
+def delete_document(document_id: int) -> None:
+    """
+    Delete a DocumentRecord (and its chunks) from the C++ Vector
+    Engine. Best-effort — used for cleanup, so failures here aren't
+    fatal to the caller.
+    """
+
+    requests.delete(
+        f"{VECTOR_ENGINE_URL}/documents/{document_id}",
+        timeout=10,
+    )
+
+
 def get_next_id() -> int:
     """
     Ask the C++ Vector Engine for the next vector ID.
