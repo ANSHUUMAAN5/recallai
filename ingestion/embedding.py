@@ -19,6 +19,23 @@ def generate_embedding(text: str) -> list[float]:
     return embedding.tolist()
 
 
+def generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
+    """
+    Generate embeddings for many texts in a single batched call.
+
+    Much faster than calling generate_embedding() in a loop — a
+    single batched forward pass instead of one Python-level model
+    call per chunk.
+    """
+
+    embeddings = model.encode(
+        texts,
+        normalize_embeddings=True
+    )
+
+    return embeddings.tolist()
+
+
 if __name__ == "__main__":
     text = "RecallAI is a vector search and retrieval system."
 

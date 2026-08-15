@@ -4,7 +4,7 @@ from ingestion.document_loader import load_text_file
 from ingestion.pdf_loader import load_pdf
 from ingestion.chunker import chunk_text
 from ingestion.pdf_chunker import chunk_pdf_pages
-from ingestion.embedding import generate_embedding
+from ingestion.embedding import generate_embeddings_batch
 
 from ingestion.vector_client import (
     create_document,
@@ -142,16 +142,19 @@ def ingest_document(
     inserted = []
 
     # -------------------------------------------------
-    # Generate embeddings + insert vectors
+    # Generate embeddings for every chunk in one batched
+    # call, then insert vectors
     # -------------------------------------------------
+
+    embeddings = generate_embeddings_batch(
+        [item["text"] for item in all_chunks]
+    )
 
     for index, item in enumerate(
         all_chunks
     ):
 
-        embedding = generate_embedding(
-            item["text"]
-        )
+        embedding = embeddings[index]
 
         vector_id = next_id + index
 
