@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+import asyncio
 import httpx
 import numpy as np
 import os
@@ -305,8 +306,12 @@ async def vectors_projection(
 
     if request.query:
 
+        embedding = await asyncio.to_thread(
+            generate_embedding, request.query
+        )
+
         query_vector = np.array(
-            generate_embedding(request.query),
+            embedding,
             dtype=np.float64,
         )
 
@@ -424,7 +429,8 @@ async def upload_document(
         # 5. Inserts VectorRecords
         # -------------------------------------------------
 
-        results = ingest_document(
+        results = await asyncio.to_thread(
+            ingest_document,
             file_path=temp_path,
             source=file.filename
         )
@@ -505,7 +511,8 @@ async def search_documents(
     # Generate embedding
     # -----------------------------------------------------
 
-    query_vector = generate_embedding(
+    query_vector = await asyncio.to_thread(
+        generate_embedding,
         request.query
     )
 
@@ -587,7 +594,8 @@ async def ask_question(
     request: AskRequest
 ):
 
-    result = answer_question(
+    result = await asyncio.to_thread(
+        answer_question,
         question=request.question,
         k=request.k
     )
