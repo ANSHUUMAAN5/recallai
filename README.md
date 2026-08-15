@@ -12,6 +12,26 @@ the uploaded documents.
 tradeoffs: uploaded documents don't persist across backend restarts,
 and the vector engine has no auth, so don't upload anything sensitive)
 
+## Highlights
+
+- **Vector search engine written from scratch in C++** — brute-force
+  (exact), KD-tree, and HNSW (the approximate-nearest-neighbor
+  algorithm production vector databases actually use), not a wrapper
+  around Pinecone/pgvector/FAISS
+- **Provider-agnostic LLM layer** — local Ollama, Claude, or Gemini
+  behind one interface, switched with an env var
+- **Grounded RAG with a deliberate fallback rule**: answers are
+  strictly grounded in your uploaded documents when any exist; if
+  nothing is indexed at all, it falls back to a clearly-labeled
+  general-knowledge answer instead of a flat refusal — an explicit
+  design choice, not a hallucination bug (see `rag/rag_pipeline.py`)
+- **Live 3D visualization** of the embedding space (PCA-projected,
+  `@react-three/fiber`) that highlights the *real* HNSW/cosine nearest
+  neighbors for whatever you search or ask — not just visual proximity
+- Deployed end-to-end (C++ engine + FastAPI + Next.js) on free-tier
+  infrastructure, with the real engineering tradeoffs that come with
+  that documented below, not hidden
+
 ## Architecture
 
 ```
@@ -54,7 +74,7 @@ and the vector engine has no auth, so don't upload anything sensitive)
   `sentence-transformers/all-MiniLM-L6-v2` embeddings (384-D) → pushed
   into the C++ engine.
 - **`rag/`** — Retrieval + grounded prompt construction + LLM call.
-  Provider-agnostic: local Ollama or the hosted Claude API.
+  Provider-agnostic: local Ollama, hosted Claude, or hosted Gemini.
 - **`api/`** — FastAPI layer tying it all together.
 - **`frontend/`** — Next.js (App Router) + TypeScript + Tailwind UI,
   built as a static export (no Node server needed at runtime). A
@@ -65,7 +85,8 @@ and the vector engine has no auth, so don't upload anything sensitive)
   (Overview / Search / Documents / Ask AI / Settings) switches content
   without ever navigating away — running a search or asking a
   question highlights its real HNSW/cosine results live in the same
-  3D view.
+  3D view. Documents can be added by file upload or by pasting text
+  directly.
 
 ## Requirements
 
@@ -185,6 +206,11 @@ a restart/redeploy.
 | POST   | `/vectors/projection`   | Corpus + optional query, PCA-reduced to 3D     |
 | POST   | `/search`               | Raw vector search, returns top-k chunks        |
 | POST   | `/ask`                  | Full RAG: search + grounded LLM answer + sources |
+
+`/ask` responses include a `grounded` boolean. If nothing is indexed
+at all, it falls back to a general-knowledge answer instead of
+refusing, with `grounded: false` and no `sources` — see
+`rag/rag_pipeline.py`.
 
 Example:
 
