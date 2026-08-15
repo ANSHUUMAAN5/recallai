@@ -57,12 +57,15 @@ and the vector engine has no auth, so don't upload anything sensitive)
   Provider-agnostic: local Ollama or the hosted Claude API.
 - **`api/`** — FastAPI layer tying it all together.
 - **`frontend/`** — Next.js (App Router) + TypeScript + Tailwind UI,
-  built as a static export (no Node server needed at runtime):
-  Overview (service health, document/vector counts), Documents
-  (upload/list/delete), Search (raw algorithm/metric picker), Ask AI
-  (chat-style Q&A with cited sources), Vector Lab (interactive 3D
-  view of the embedding space, PCA-projected, with real HNSW/cosine
-  nearest neighbors highlighted), and Settings.
+  built as a static export (no Node server needed at runtime). A
+  single persistent workspace, not separate pages: an interactive 3D
+  view of the embedding space (PCA-projected) stays mounted at all
+  times in the center, a left panel of shared controls
+  (algorithm/metric/top-k) drives it, and a tabbed right panel
+  (Overview / Search / Documents / Ask AI / Settings) switches content
+  without ever navigating away — running a search or asking a
+  question highlights its real HNSW/cosine results live in the same
+  3D view.
 
 ## Requirements
 
