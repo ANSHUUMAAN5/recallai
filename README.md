@@ -7,6 +7,11 @@ Upload a PDF or TXT file, ask questions about it, get grounded answers
 with citations back to the source page/chunk — no hallucinating outside
 the uploaded documents.
 
+**Live demo**: https://frontend-anshuumaan5s-projects.vercel.app
+(free-tier hosting — see [Deploying](#deploying-free-tier) for the
+tradeoffs: uploaded documents don't persist across backend restarts,
+and the vector engine has no auth, so don't upload anything sensitive)
+
 ## Architecture
 
 ```
