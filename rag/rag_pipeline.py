@@ -72,7 +72,38 @@ def answer_question(
     results = search_result["results"]
 
     # -------------------------------------------------
-    # 3. Build context
+    # 3. Nothing indexed at all — fall back to a plain,
+    # clearly-labeled general-knowledge answer instead of
+    # a flat refusal. (Documents exist but are irrelevant
+    # to the question is a separate, fuzzier case — left
+    # as a strict "not found" for now.)
+    # -------------------------------------------------
+
+    if not results:
+
+        prompt = f"""
+Answer the user's question using your own general knowledge.
+
+USER QUESTION:
+
+{question}
+
+ANSWER:
+""".strip()
+
+        answer = generate_answer(
+            prompt
+        )
+
+        return {
+            "question": question,
+            "answer": answer,
+            "sources": [],
+            "grounded": False,
+        }
+
+    # -------------------------------------------------
+    # 4. Build context
     # -------------------------------------------------
 
     context = build_context(
@@ -80,7 +111,7 @@ def answer_question(
     )
 
     # -------------------------------------------------
-    # 4. Build grounded prompt
+    # 5. Build grounded prompt
     # -------------------------------------------------
 
     prompt = f"""
@@ -106,7 +137,7 @@ ANSWER:
 """.strip()
 
     # -------------------------------------------------
-    # 5. Generate answer with Ollama
+    # 6. Generate answer with Ollama
     # -------------------------------------------------
 
     answer = generate_answer(
@@ -114,7 +145,7 @@ ANSWER:
     )
 
     # -------------------------------------------------
-    # 6. Return answer + sources
+    # 7. Return answer + sources
     # -------------------------------------------------
 
     sources = []
@@ -132,4 +163,5 @@ ANSWER:
         "question": question,
         "answer": answer,
         "sources": sources,
+        "grounded": True,
     }

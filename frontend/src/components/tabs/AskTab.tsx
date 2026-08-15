@@ -7,6 +7,7 @@ export interface Turn {
   question: string;
   answer: string;
   sources: Source[];
+  grounded: boolean;
 }
 
 interface Props {
@@ -52,6 +53,11 @@ export default function AskTab({ turns, loading, onAsk }: Props) {
               {turn.question}
             </p>
             <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-3">
+              {!turn.grounded && (
+                <p className="mb-2 inline-block rounded-full border border-amber-800 bg-amber-950/50 px-2 py-0.5 text-xs text-amber-400">
+                  Not from your documents — general knowledge
+                </p>
+              )}
               <p className="whitespace-pre-wrap text-sm text-neutral-200">
                 {turn.answer}
               </p>

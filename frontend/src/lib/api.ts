@@ -36,6 +36,7 @@ export interface AskResult {
   question: string;
   answer: string;
   sources: Source[];
+  grounded: boolean;
 }
 
 export interface Config {

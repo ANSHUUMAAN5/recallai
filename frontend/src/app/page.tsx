@@ -165,7 +165,12 @@ export default function Home() {
 
       setChatTurns((prev) => [
         ...prev,
-        { question, answer: result.answer, sources: result.sources },
+        {
+          question,
+          answer: result.answer,
+          sources: result.sources,
+          grounded: result.grounded,
+        },
       ]);
       setProjectionPoints(projection.points);
       setProjectionQuery(projection.query);
@@ -178,6 +183,7 @@ export default function Home() {
           answer:
             "Could not get an answer. Check that the API and LLM provider are running.",
           sources: [],
+          grounded: true,
         },
       ]);
     } finally {
