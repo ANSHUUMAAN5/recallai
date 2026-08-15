@@ -17,11 +17,13 @@ services:
     dockerfilePath: ./api/Dockerfile
     dockerContext: .
     envVars:
+      # fromService hostport (Render's private-networking hostname)
+      # did not turn out to be reachable between two free-tier "web"
+      # services in practice, so this points at the engine's public
+      # HTTPS URL directly instead — already-accepted tradeoff, see
+      # the note on recallai-engine above.
       - key: VECTOR_ENGINE_URL
-        fromService:
-          type: web
-          name: recallai-engine
-          property: hostport
+        value: https://recallai-engine.onrender.com
       - key: LLM_PROVIDER
         value: gemini
       - key: GEMINI_API_KEY
