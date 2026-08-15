@@ -12,6 +12,7 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +40,8 @@ export default function DocumentsPage() {
     setUploading(true);
     setError(null);
 
+    const slowTimer = setTimeout(() => setSlow(true), 6000);
+
     try {
       const result = await uploadDocument(file);
 
@@ -50,7 +53,9 @@ export default function DocumentsPage() {
     } catch {
       setError("Upload failed.");
     } finally {
+      clearTimeout(slowTimer);
       setUploading(false);
+      setSlow(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
@@ -87,6 +92,13 @@ export default function DocumentsPage() {
           />
         </label>
       </div>
+
+      {slow && (
+        <div className="rounded-md border border-neutral-800 bg-neutral-900/50 px-4 py-3 text-sm text-neutral-400">
+          Still working — the backend runs on free-tier hosting and can
+          take up to a minute to wake up after being idle.
+        </div>
+      )}
 
       {error && (
         <div className="rounded-md border border-red-900 bg-red-950/50 px-4 py-3 text-sm text-red-300">

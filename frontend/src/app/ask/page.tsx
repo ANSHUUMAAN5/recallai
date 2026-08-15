@@ -13,6 +13,7 @@ export default function AskPage() {
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -23,6 +24,8 @@ export default function AskPage() {
 
     setLoading(true);
     setError(null);
+
+    const slowTimer = setTimeout(() => setSlow(true), 6000);
 
     try {
       const result = await ask(trimmed);
@@ -36,7 +39,9 @@ export default function AskPage() {
         "Could not get an answer. Check that the API and LLM provider are running."
       );
     } finally {
+      clearTimeout(slowTimer);
       setLoading(false);
+      setSlow(false);
     }
   }
 
@@ -85,7 +90,11 @@ export default function AskPage() {
         ))}
 
         {loading && (
-          <p className="text-neutral-500">Thinking...</p>
+          <p className="text-neutral-500">
+            {slow
+              ? "Still working — the backend runs on free-tier hosting and can take up to a minute to wake up after being idle."
+              : "Thinking..."}
+          </p>
         )}
       </div>
 
