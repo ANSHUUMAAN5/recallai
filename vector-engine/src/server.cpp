@@ -1,6 +1,7 @@
 #include "httplib.h"
 #include "vector_db.h"
 
+#include <cstdlib>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
@@ -1480,18 +1481,30 @@ int main() {
 
     // =====================================================
     // Start server
+    //
+    // Render (and most PaaS hosts) assign the port to bind via
+    // the PORT env var and route traffic there; a hardcoded
+    // port that doesn't match causes persistent 502s regardless
+    // of whether the process is actually up.
     // =====================================================
+
+    const char* port_env = std::getenv("PORT");
+    int port = port_env ? std::atoi(port_env) : 8081;
+
+    if (port <= 0) {
+        port = 8081;
+    }
 
     std::cout
         << "RecallAI Vector Engine\n\n";
 
     std::cout
-        << "http://localhost:8081\n\n";
+        << "http://localhost:" << port << "\n\n";
 
 
     server.listen(
         "0.0.0.0",
-        8081
+        port
     );
 
     return 0;

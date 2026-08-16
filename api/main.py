@@ -59,6 +59,71 @@ app.add_middleware(
 
 
 # =========================================================
+# Retrying vector-engine request helper
+#
+# Render's free tier spins the vector engine down after ~15 min
+# idle; waking it back up can take 30-60s and shows up as
+# connection errors or 502/503/504 responses in the meantime —
+# not something a single short-timeout request can ride out. Retry
+# with backoff instead of failing on the first attempt.
+# =========================================================
+
+_RETRYABLE_STATUS_CODES = {502, 503, 504}
+_ENGINE_ATTEMPTS = 5
+_ENGINE_TIMEOUT = 15
+_ENGINE_BACKOFF_SECONDS = 5
+
+
+async def vector_engine_request(
+    method: str,
+    path: str,
+    **kwargs,
+) -> httpx.Response:
+
+    last_error: Exception | None = None
+
+    for attempt in range(_ENGINE_ATTEMPTS):
+
+        try:
+
+            async with httpx.AsyncClient() as client:
+
+                response = await client.request(
+                    method,
+                    f"{VECTOR_ENGINE_URL}{path}",
+                    timeout=_ENGINE_TIMEOUT,
+                    **kwargs,
+                )
+
+            if response.status_code in _RETRYABLE_STATUS_CODES:
+
+                last_error = httpx.HTTPStatusError(
+                    f"{response.status_code} from vector engine",
+                    request=response.request,
+                    response=response,
+                )
+
+            else:
+
+                # Any other status (including a normal 4xx like
+                # "document not found") is returned as-is — it's a
+                # real response from a live engine, not a cold-start
+                # symptom, so it's not retried here. Each caller
+                # decides whether to raise_for_status() itself.
+                return response
+
+        except httpx.TransportError as error:
+
+            last_error = error
+
+        if attempt < _ENGINE_ATTEMPTS - 1:
+
+            await asyncio.sleep(_ENGINE_BACKOFF_SECONDS)
+
+    raise last_error
+
+
+# =========================================================
 # Request Models
 # =========================================================
 
@@ -101,12 +166,7 @@ async def health():
 @app.get("/vector-engine/health")
 async def vector_engine_health():
 
-    async with httpx.AsyncClient() as client:
-
-        response = await client.get(
-            f"{VECTOR_ENGINE_URL}/health",
-            timeout=5
-        )
+    response = await vector_engine_request("GET", "/health")
 
     response.raise_for_status()
 
@@ -147,12 +207,7 @@ async def config():
 @app.get("/stats")
 async def stats():
 
-    async with httpx.AsyncClient() as client:
-
-        response = await client.get(
-            f"{VECTOR_ENGINE_URL}/stats",
-            timeout=5
-        )
+    response = await vector_engine_request("GET", "/stats")
 
     response.raise_for_status()
 
@@ -166,12 +221,7 @@ async def stats():
 @app.get("/documents")
 async def list_documents():
 
-    async with httpx.AsyncClient() as client:
-
-        response = await client.get(
-            f"{VECTOR_ENGINE_URL}/documents",
-            timeout=10
-        )
+    response = await vector_engine_request("GET", "/documents")
 
     response.raise_for_status()
 
@@ -185,12 +235,10 @@ async def list_documents():
 @app.delete("/documents/{document_id}")
 async def delete_document(document_id: int):
 
-    async with httpx.AsyncClient() as client:
-
-        response = await client.delete(
-            f"{VECTOR_ENGINE_URL}/documents/{document_id}",
-            timeout=10
-        )
+    response = await vector_engine_request(
+        "DELETE",
+        f"/documents/{document_id}",
+    )
 
     return response.json()
 
@@ -202,12 +250,7 @@ async def delete_document(document_id: int):
 @app.get("/vectors")
 async def list_vectors():
 
-    async with httpx.AsyncClient() as client:
-
-        response = await client.get(
-            f"{VECTOR_ENGINE_URL}/vectors",
-            timeout=15
-        )
+    response = await vector_engine_request("GET", "/vectors")
 
     response.raise_for_status()
 
@@ -231,12 +274,7 @@ async def vectors_projection(
     request: ProjectionRequest
 ):
 
-    async with httpx.AsyncClient() as client:
-
-        response = await client.get(
-            f"{VECTOR_ENGINE_URL}/vectors",
-            timeout=15
-        )
+    response = await vector_engine_request("GET", "/vectors")
 
     response.raise_for_status()
 
@@ -543,21 +581,18 @@ async def search_documents(
     # Send to C++ Vector Engine
     # -----------------------------------------------------
 
-    async with httpx.AsyncClient() as client:
+    response = await vector_engine_request(
+        "POST",
+        "/search",
 
-        response = await client.post(
-            f"{VECTOR_ENGINE_URL}/search",
+        params={
+            "k": request.k,
+            "algorithm": request.algorithm,
+            "metric": request.metric
+        },
 
-            params={
-                "k": request.k,
-                "algorithm": request.algorithm,
-                "metric": request.metric
-            },
-
-            content=query_string,
-
-            timeout=30
-        )
+        content=query_string,
+    )
 
 
     # -----------------------------------------------------

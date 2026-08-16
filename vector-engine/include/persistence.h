@@ -23,3 +23,4 @@ public:
         std::vector<VectorRecord>& records
     );
 };
+
