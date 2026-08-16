@@ -143,13 +143,19 @@ def ingest_document(
     inserted = []
 
     # -------------------------------------------------
-    # Generate embeddings for every chunk in one batched
-    # call, then insert vectors
+    # Generate embeddings and insert in small sub-batches
+    # instead of one call covering the whole document.
+    #
+    # A single batched call over a large document (tens of
+    # pages -> 100+ chunks) was observed to spike memory
+    # enough to get the API process killed on Render's
+    # free-tier 512MB limit, taking the whole live site down
+    # for every visitor until it restarted. Capping how many
+    # chunks are embedded/held in memory at once bounds that
+    # peak regardless of document size.
     # -------------------------------------------------
 
-    embeddings = generate_embeddings_batch(
-        [item["text"] for item in all_chunks]
-    )
+    embedding_batch_size = 20
 
     # If chunk insertion fails partway (e.g. the vector engine
     # restarts mid-upload, which happens periodically on free-tier
@@ -159,31 +165,45 @@ def ingest_document(
 
     try:
 
-        for index, item in enumerate(
-            all_chunks
+        for batch_start in range(
+            0,
+            len(all_chunks),
+            embedding_batch_size,
         ):
 
-            embedding = embeddings[index]
+            batch_items = all_chunks[
+                batch_start:batch_start + embedding_batch_size
+            ]
 
-            vector_id = next_id + index
-
-            response = insert_vector(
-                vector_id=vector_id,
-                document_id=document_id,
-                vector=embedding,
-                text=item["text"],
-                source=source,
-                page=item["page"],
-                chunk=item["chunk"],
+            batch_embeddings = generate_embeddings_batch(
+                [item["text"] for item in batch_items]
             )
 
-            inserted.append({
-                "id": vector_id,
-                "document_id": document_id,
-                "page": item["page"],
-                "chunk": item["chunk"],
-                "text": item["text"],
-            })
+            for offset, item in enumerate(batch_items):
+
+                index = batch_start + offset
+
+                embedding = batch_embeddings[offset]
+
+                vector_id = next_id + index
+
+                response = insert_vector(
+                    vector_id=vector_id,
+                    document_id=document_id,
+                    vector=embedding,
+                    text=item["text"],
+                    source=source,
+                    page=item["page"],
+                    chunk=item["chunk"],
+                )
+
+                inserted.append({
+                    "id": vector_id,
+                    "document_id": document_id,
+                    "page": item["page"],
+                    "chunk": item["chunk"],
+                    "text": item["text"],
+                })
 
     except Exception:
 
