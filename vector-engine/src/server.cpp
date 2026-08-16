@@ -957,7 +957,20 @@ int main() {
 
                 // -------------------------------------------------
                 // Insert
+                //
+                // persist=false lets a caller inserting many
+                // chunks in a row (e.g. one document's worth)
+                // defer the disk write to POST /flush instead of
+                // paying a full-file rewrite per chunk.
                 // -------------------------------------------------
+
+                bool persist = true;
+
+                if (req.has_param("persist")) {
+
+                    persist =
+                        req.get_param_value("persist") != "false";
+                }
 
                 db.insert(
                     id,
@@ -966,7 +979,8 @@ int main() {
                     text,
                     source,
                     page,
-                    chunk
+                    chunk,
+                    persist
                 );
 
 
@@ -1012,6 +1026,55 @@ int main() {
 
                 json << "}";
 
+
+                res.set_content(
+                    json.str(),
+                    "application/json"
+                );
+            }
+        }
+    );
+
+
+    // =====================================================
+    // POST /flush
+    //
+    // Writes current in-memory state to disk. Paired with
+    // POST /insert?persist=false so a caller can insert many
+    // vectors in a row and pay for one full-file rewrite
+    // instead of one per vector.
+    // =====================================================
+
+    server.Post(
+        "/flush",
+        [&](const httplib::Request&,
+            httplib::Response& res) {
+
+            try {
+
+                db.flush();
+
+                res.set_content(
+                    R"({"status":"flushed"})",
+                    "application/json"
+                );
+            }
+
+            catch (const std::exception& e) {
+
+                res.status = 500;
+
+                std::ostringstream json;
+
+                json << "{";
+
+                json << "\"error\":\""
+                     << escapeJson(
+                            e.what()
+                        )
+                     << "\"";
+
+                json << "}";
 
                 res.set_content(
                     json.str(),

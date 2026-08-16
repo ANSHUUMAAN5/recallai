@@ -141,9 +141,15 @@ def insert_vector(
     source: str,
     page: int,
     chunk: int,
+    persist: bool = True,
 ):
     """
     Insert one embedded chunk into the C++ Vector Engine.
+
+    persist=False skips the engine's disk write for this call —
+    used when inserting many chunks in a row (one document's
+    worth), paired with a single flush() at the end instead of a
+    full-file rewrite per chunk.
     """
 
     params = {
@@ -153,6 +159,7 @@ def insert_vector(
         "source": source,
         "page": page,
         "chunk": chunk,
+        "persist": "true" if persist else "false",
     }
 
     vector_body = ",".join(
@@ -171,3 +178,15 @@ def insert_vector(
     )
 
     return response.json()
+
+
+def flush() -> None:
+    """
+    Write the C++ Vector Engine's current in-memory state to disk.
+    Call after a run of insert_vector(..., persist=False) calls.
+    """
+
+    _request_with_retry(
+        "POST",
+        f"{VECTOR_ENGINE_URL}/flush",
+    )

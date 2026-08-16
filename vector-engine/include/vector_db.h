@@ -52,8 +52,15 @@ public:
         const std::string& text,
         const std::string& source,
         int page,
-        int chunk
+        int chunk,
+        bool persist = true
     );
+
+    // Writes current in-memory state to disk. Used after a run of
+    // insert(..., persist=false) calls, so a whole document's
+    // worth of chunks costs one rewrite of the persistence file
+    // instead of one rewrite per chunk.
+    void flush();
 
     bool erase(int id);
 

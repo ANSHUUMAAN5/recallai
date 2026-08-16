@@ -406,7 +406,8 @@ void VectorDB::insert(
     const std::string& text,
     const std::string& source,
     int page,
-    int chunk
+    int chunk,
+    bool persist
 ) {
 
     // -----------------------------------------------------
@@ -550,7 +551,29 @@ void VectorDB::insert(
 
     // -----------------------------------------------------
     // Persist
+    //
+    // Skippable so a caller inserting many vectors in a row
+    // (one document's worth of chunks) can defer the disk
+    // write to a single flush() at the end instead of paying
+    // a full-file rewrite per chunk.
     // -----------------------------------------------------
+
+    if (persist) {
+
+        Persistence::save(
+            persistenceFile,
+            documents,
+            records
+        );
+    }
+}
+
+
+// =========================================================
+// Flush
+// =========================================================
+
+void VectorDB::flush() {
 
     Persistence::save(
         persistenceFile,

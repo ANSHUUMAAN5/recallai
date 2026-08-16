@@ -9,6 +9,7 @@ from ingestion.embedding import generate_embeddings_batch
 from ingestion.vector_client import (
     create_document,
     delete_document,
+    flush,
     get_next_id,
     insert_vector,
 )
@@ -195,6 +196,7 @@ def ingest_document(
                     source=source,
                     page=item["page"],
                     chunk=item["chunk"],
+                    persist=False,
                 )
 
                 inserted.append({
@@ -204,6 +206,13 @@ def ingest_document(
                     "chunk": item["chunk"],
                     "text": item["text"],
                 })
+
+        # ---------------------------------------------------
+        # One disk write for the whole document, instead of
+        # one per chunk (see persist=False above).
+        # ---------------------------------------------------
+
+        flush()
 
     except Exception:
 
