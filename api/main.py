@@ -153,9 +153,14 @@ class ProjectionRequest(BaseModel):
 
 # =========================================================
 # GET /health
+#
+# Also answers HEAD — uptime monitors (e.g. UptimeRobot) default
+# to HEAD requests to save bandwidth, and a GET-only route 405s
+# those, which reads as "down" even though the service is fine.
 # =========================================================
 
 @app.get("/health")
+@app.head("/health")
 async def health():
 
     return {
