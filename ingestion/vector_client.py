@@ -21,12 +21,14 @@ if not VECTOR_ENGINE_URL.startswith("http"):
 #
 # Render's free tier spins the vector engine down after ~15 min
 # idle; waking it back up can take 30-60s and shows up as
-# connection errors or 502/503/504 responses in the meantime —
-# not something a single short-timeout request can ride out. Retry
-# with backoff instead of failing on the first attempt.
+# connection errors or a 5xx response in the meantime — not
+# something a single short-timeout request can ride out. Retry
+# with backoff instead of failing on the first attempt. Any 5xx
+# (not just 502/503/504) is treated as "infrastructure isn't ready
+# yet" — a narrower allowlist was observed to miss a real case
+# during a cold start.
 # =============================================================
 
-_RETRYABLE_STATUS_CODES = {502, 503, 504}
 _ATTEMPTS = 5
 _REQUEST_TIMEOUT = 15
 _BACKOFF_SECONDS = 5
@@ -47,7 +49,7 @@ def _request_with_retry(method: str, url: str, **kwargs) -> requests.Response:
                 **kwargs,
             )
 
-            if response.status_code in _RETRYABLE_STATUS_CODES:
+            if response.status_code >= 500:
 
                 last_error = requests.exceptions.HTTPError(
                     f"{response.status_code} from vector engine",

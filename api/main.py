@@ -68,7 +68,6 @@ app.add_middleware(
 # with backoff instead of failing on the first attempt.
 # =========================================================
 
-_RETRYABLE_STATUS_CODES = {502, 503, 504}
 _ENGINE_ATTEMPTS = 5
 _ENGINE_TIMEOUT = 15
 _ENGINE_BACKOFF_SECONDS = 5
@@ -95,8 +94,14 @@ async def vector_engine_request(
                     **kwargs,
                 )
 
-            if response.status_code in _RETRYABLE_STATUS_CODES:
+            if response.status_code >= 500:
 
+                # Any 5xx — not just 502/503/504 — is treated as
+                # "infrastructure isn't ready yet" during a cold
+                # start. A narrower allowlist was observed to miss
+                # a real case: the engine/Render's proxy returning
+                # some other 5xx mid-startup, which fell through as
+                # a hard failure instead of being retried.
                 last_error = httpx.HTTPStatusError(
                     f"{response.status_code} from vector engine",
                     request=response.request,
@@ -105,7 +110,7 @@ async def vector_engine_request(
 
             else:
 
-                # Any other status (including a normal 4xx like
+                # A 2xx/3xx/4xx (including a normal 4xx like
                 # "document not found") is returned as-is — it's a
                 # real response from a live engine, not a cold-start
                 # symptom, so it's not retried here. Each caller
