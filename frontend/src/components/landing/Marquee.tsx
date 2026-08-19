@@ -1,14 +1,12 @@
 const ITEMS = [
-  "C++17",
-  "HNSW",
-  "KD-Tree",
-  "FastAPI",
-  "Next.js",
-  "react-three-fiber",
-  "Docker",
-  "Render",
-  "MiniLM",
-  "GSAP",
+  "Self-hosted",
+  "Grounded answers",
+  "Cited sources",
+  "No vendor lock-in",
+  "Built from scratch",
+  "Your data stays yours",
+  "Open source",
+  "No hallucinated citations",
 ];
 
 export default function Marquee() {

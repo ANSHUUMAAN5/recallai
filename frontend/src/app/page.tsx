@@ -38,7 +38,13 @@ const STATS = [
   { value: 0, label: "External vector DB used", suffix: "" },
 ];
 
-function PipelineCard({ item }: { item: (typeof PIPELINE)[number] }) {
+function PipelineStep({
+  item,
+  index,
+}: {
+  item: (typeof PIPELINE)[number];
+  index: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
 
   function handleMove(event: React.MouseEvent<HTMLDivElement>) {
@@ -50,25 +56,35 @@ function PipelineCard({ item }: { item: (typeof PIPELINE)[number] }) {
   }
 
   return (
-    <div
-      ref={ref}
-      data-pipeline-item
-      onMouseMove={handleMove}
-      className="group relative overflow-hidden bg-surface p-8 transition-transform duration-300 hover:-translate-y-1"
-    >
+    <div data-pipeline-item className="relative flex gap-6 pb-16 last:pb-0">
+      <div className="relative z-10 flex shrink-0 flex-col items-center">
+        <div
+          data-pipeline-node
+          className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-border-strong bg-canvas font-mono text-sm font-medium text-faint transition-colors duration-500"
+        >
+          {index + 1}
+        </div>
+      </div>
+
       <div
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background:
-            "radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), var(--color-accent-soft), transparent 70%)",
-        }}
-      />
-      <div className="relative">
-        <p className="mb-4 font-mono text-[11px] tracking-[0.15em] text-accent">
-          {item.tag}
-        </p>
-        <h3 className="mb-2 text-lg font-medium text-ink">{item.title}</h3>
-        <p className="text-sm leading-relaxed text-muted">{item.body}</p>
+        ref={ref}
+        onMouseMove={handleMove}
+        className="group relative -mt-1 flex-1 overflow-hidden rounded-2xl border border-border bg-surface p-6"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background:
+              "radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), var(--color-accent-soft), transparent 70%)",
+          }}
+        />
+        <div className="relative">
+          <p className="mb-3 font-mono text-[11px] tracking-[0.15em] text-accent">
+            {item.tag}
+          </p>
+          <h3 className="mb-2 text-lg font-medium text-ink">{item.title}</h3>
+          <p className="text-sm leading-relaxed text-muted">{item.body}</p>
+        </div>
       </div>
     </div>
   );
@@ -145,6 +161,57 @@ export default function LandingPage() {
           start: "top 78%",
           toggleActions: "play none none reverse",
         },
+      });
+
+      // The connecting line draws itself as the pipeline scrolls by,
+      // with a pulse riding its leading edge — the line is "data"
+      // moving through the stages, not just a decoration.
+      const pipelineList = document.querySelector("[data-pipeline-list]");
+      const track = document.querySelector<HTMLElement>("[data-pipeline-track]");
+      const pulse = document.querySelector<HTMLElement>("[data-pipeline-pulse]");
+
+      if (pipelineList && track && pulse) {
+        gsap.to(
+          { progress: 0 },
+          {
+            progress: 1,
+            ease: "none",
+            scrollTrigger: {
+              trigger: pipelineList,
+              start: "top 65%",
+              end: "bottom 75%",
+              scrub: 0.3,
+            },
+            onUpdate() {
+              const pct = `${this.targets()[0].progress * 100}%`;
+              track.style.height = pct;
+              pulse.style.top = pct;
+            },
+          },
+        );
+      }
+
+      // Each node lights up once the scroll line reaches it
+      gsap.utils.toArray<HTMLElement>("[data-pipeline-node]").forEach((node) => {
+        ScrollTrigger.create({
+          trigger: node,
+          start: "top 65%",
+          toggleActions: "play none none reverse",
+          onEnter: () =>
+            gsap.to(node, {
+              borderColor: "var(--color-accent)",
+              backgroundColor: "var(--color-accent)",
+              color: "var(--color-accent-ink)",
+              duration: 0.3,
+            }),
+          onLeaveBack: () =>
+            gsap.to(node, {
+              borderColor: "var(--color-border-strong)",
+              backgroundColor: "var(--color-canvas)",
+              color: "var(--color-faint)",
+              duration: 0.3,
+            }),
+        });
       });
 
       // Stat numbers count up once, the first time they scroll in
@@ -373,9 +440,21 @@ export default function LandingPage() {
             Document in, cited answer out.
           </h2>
 
-          <div data-pipeline-list className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2">
-            {PIPELINE.map((item) => (
-              <PipelineCard key={item.tag} item={item} />
+          <div data-pipeline-list className="relative max-w-2xl">
+            <div className="absolute left-[21px] top-2 bottom-16 w-px bg-border" />
+            <div
+              data-pipeline-track
+              className="absolute left-[21px] top-2 w-px origin-top bg-accent"
+              style={{ height: "0%" }}
+            />
+            <div
+              data-pipeline-pulse
+              className="absolute left-[21px] h-2 w-2 -translate-x-1/2 rounded-full bg-secondary shadow-[0_0_8px_var(--color-secondary)]"
+              style={{ top: "0.5rem" }}
+            />
+
+            {PIPELINE.map((item, index) => (
+              <PipelineStep key={item.tag} item={item} index={index} />
             ))}
           </div>
         </div>
