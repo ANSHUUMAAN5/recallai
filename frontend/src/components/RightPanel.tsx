@@ -10,16 +10,16 @@ interface Props {
 
 export default function RightPanel({ activeTab, onTabChange, children }: Props) {
   return (
-    <aside className="flex w-96 shrink-0 flex-col border-l border-neutral-800 bg-neutral-950">
-      <div className="flex border-b border-neutral-800">
+    <aside data-ws-right className="flex w-96 shrink-0 flex-col border-l border-border bg-surface">
+      <div className="flex border-b border-border">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => onTabChange(tab.key)}
             className={`flex-1 px-2 py-3 text-xs font-medium uppercase tracking-wide transition-colors ${
               activeTab === tab.key
-                ? "border-b-2 border-cyan-400 text-cyan-400"
-                : "text-neutral-500 hover:text-neutral-300"
+                ? "border-b-2 border-accent text-accent"
+                : "text-muted hover:text-ink-soft"
             }`}
           >
             {tab.label}
@@ -27,7 +27,9 @@ export default function RightPanel({ activeTab, onTabChange, children }: Props) 
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+      <div key={activeTab} className="min-h-0 flex-1 overflow-y-auto animate-tab-in">
+        {children}
+      </div>
     </aside>
   );
 }

@@ -13,12 +13,12 @@ function Tile({
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
 }) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-4">
+    <div className="rounded-lg border border-border bg-surface-2 p-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-neutral-400">{label}</p>
+        <p className="text-xs text-muted">{label}</p>
         <Icon size={14} strokeWidth={1.75} />
       </div>
-      <p className="mt-2 text-2xl font-semibold text-cyan-400">{value}</p>
+      <p className="mt-2 text-2xl font-semibold text-accent">{value}</p>
     </div>
   );
 }
@@ -48,21 +48,21 @@ export default function OverviewTab({ documentCount, vectorCount, documents }: P
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
           Recent documents
         </p>
 
         {recent.length === 0 ? (
-          <p className="text-sm text-neutral-500">No documents yet.</p>
+          <p className="text-sm text-muted">No documents yet.</p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-neutral-800">
+          <div className="overflow-hidden rounded-lg border border-border">
             {recent.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between border-b border-neutral-800 px-3 py-2 text-sm last:border-b-0"
+                className="flex items-center justify-between border-b border-border px-3 py-2 text-sm last:border-b-0"
               >
-                <span className="truncate">{doc.filename}</span>
-                <span className="shrink-0 text-neutral-500">{doc.chunks} chunks</span>
+                <span className="truncate text-ink">{doc.filename}</span>
+                <span className="shrink-0 text-muted">{doc.chunks} chunks</span>
               </div>
             ))}
           </div>

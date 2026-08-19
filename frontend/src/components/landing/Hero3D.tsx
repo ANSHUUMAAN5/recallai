@@ -9,10 +9,12 @@ import { createSeededRandom } from "@/lib/seededRandom";
 const POINT_COUNT = 64;
 const RADIUS = 6.5;
 
+type NodeColor = "neutral" | "accent" | "secondary";
+
 interface Node {
   position: [number, number, number];
   size: number;
-  accent: boolean;
+  color: NodeColor;
 }
 
 function buildGraph() {
@@ -31,10 +33,14 @@ function buildGraph() {
     const y = r * Math.sin(phi) * Math.sin(theta);
     const z = r * Math.cos(phi);
 
+    const roll = random();
+    const color: NodeColor =
+      roll > 0.92 ? "secondary" : roll > 0.8 ? "accent" : "neutral";
+
     nodes.push({
       position: [x, y, z],
-      size: 0.05 + random() * 0.09,
-      accent: random() > 0.88,
+      size: color === "neutral" ? 0.05 + random() * 0.07 : 0.09 + random() * 0.08,
+      color,
     });
   }
 
@@ -85,9 +91,9 @@ function Graph() {
         <Line
           key={i}
           points={[nodes[a].position, nodes[b].position]}
-          color="#3a4258"
+          color="#c3ddca"
           transparent
-          opacity={0.5}
+          opacity={0.7}
           lineWidth={1}
         />
       ))}
@@ -95,7 +101,15 @@ function Graph() {
       {nodes.map((node, i) => (
         <mesh key={i} position={node.position}>
           <sphereGeometry args={[node.size, 12, 12]} />
-          <meshBasicMaterial color={node.accent ? "#22d3ee" : "#8b93a7"} />
+          <meshBasicMaterial
+            color={
+              node.color === "accent"
+                ? "#12875b"
+                : node.color === "secondary"
+                  ? "#c08a12"
+                  : "#7b9382"
+            }
+          />
         </mesh>
       ))}
     </group>

@@ -8,7 +8,7 @@ function Dot({ state }: { state: ServiceState }) {
       ? "bg-emerald-500"
       : state === "down"
         ? "bg-red-500"
-        : "bg-neutral-600";
+        : "bg-faint";
 
   return <span className={`inline-block h-1.5 w-1.5 rounded-full ${color}`} />;
 }
@@ -17,7 +17,7 @@ export default function StatusBar() {
   const { apiState, engineState, config } = useSystemStatus();
 
   return (
-    <div className="flex items-center gap-6 border-t border-neutral-800 px-6 py-2 text-xs text-neutral-500">
+    <div data-ws-status className="flex items-center gap-6 border-t border-border bg-surface px-6 py-2 text-xs text-muted">
       <span className="flex items-center gap-2">
         <Dot state={apiState} />
         API {apiState === "up" ? "Online" : apiState === "down" ? "Offline" : "..."}
@@ -33,7 +33,7 @@ export default function StatusBar() {
           : "LLM"}
       </span>
       {config && (
-        <span className="ml-auto text-neutral-600">{config.llm_model}</span>
+        <span className="ml-auto text-faint">{config.llm_model}</span>
       )}
     </div>
   );

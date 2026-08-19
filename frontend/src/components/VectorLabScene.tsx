@@ -32,7 +32,7 @@ function CorpusPoint({
     point.z * SCALE,
   ];
 
-  const color = selected ? "#facc15" : highlighted ? "#22d3ee" : "#525252";
+  const color = selected ? "#c08a12" : highlighted ? "#12875b" : "#93a897";
   const radius = selected ? 0.22 : highlighted ? 0.16 : 0.09;
 
   return (
@@ -54,11 +54,11 @@ function QueryMarker({ position }: { position: [number, number, number] }) {
     <group position={position}>
       <mesh>
         <sphereGeometry args={[0.28, 20, 20]} />
-        <meshBasicMaterial color="#f472b6" />
+        <meshBasicMaterial color="#2a6f97" />
       </mesh>
       <mesh>
         <ringGeometry args={[0.4, 0.46, 32]} />
-        <meshBasicMaterial color="#f472b6" transparent opacity={0.5} side={DoubleSide} />
+        <meshBasicMaterial color="#2a6f97" transparent opacity={0.5} side={DoubleSide} />
       </mesh>
     </group>
   );
@@ -102,7 +102,7 @@ export default function VectorLabScene({
                 queryPosition,
                 [point.x * SCALE, point.y * SCALE, point.z * SCALE],
               ]}
-              color="#f472b6"
+              color="#2a6f97"
               opacity={0.3}
               transparent
               lineWidth={1}

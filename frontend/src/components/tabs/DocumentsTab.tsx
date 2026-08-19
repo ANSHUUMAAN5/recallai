@@ -73,7 +73,7 @@ export default function DocumentsTab({ documents, loading, onUpload, onDelete }:
   return (
     <div className="space-y-4 p-4">
       <div className="flex gap-2">
-        <label className="flex-1 cursor-pointer rounded-md bg-cyan-400 px-4 py-2 text-center text-sm font-medium text-neutral-950 hover:bg-cyan-300">
+        <label className="flex-1 cursor-pointer rounded-md bg-accent px-4 py-2 text-center text-sm font-medium text-accent-ink hover:bg-accent-hover">
           {uploading ? "Uploading..." : "Upload file"}
           <input
             ref={fileInputRef}
@@ -88,7 +88,7 @@ export default function DocumentsTab({ documents, loading, onUpload, onDelete }:
           type="button"
           onClick={() => setShowPaste((v) => !v)}
           disabled={uploading}
-          className="flex-1 rounded-md border border-neutral-800 px-4 py-2 text-sm font-medium text-neutral-300 hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex-1 rounded-md border border-border px-4 py-2 text-sm font-medium text-ink-soft hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Paste text
         </button>
@@ -97,26 +97,26 @@ export default function DocumentsTab({ documents, loading, onUpload, onDelete }:
       {showPaste && (
         <form
           onSubmit={handlePasteSubmit}
-          className="space-y-2 rounded-md border border-neutral-800 bg-neutral-900/50 p-3"
+          className="space-y-2 rounded-md border border-border bg-surface-2 p-3"
         >
           <input
             type="text"
             value={pasteTitle}
             onChange={(event) => setPasteTitle(event.target.value)}
             placeholder="Title (e.g. meeting-notes)"
-            className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-neutral-600 focus:outline-none"
+            className="w-full rounded-md border border-border bg-canvas px-3 py-1.5 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none"
           />
           <textarea
             value={pasteText}
             onChange={(event) => setPasteText(event.target.value)}
             placeholder="Paste or type any text — notes, an article, anything you want searchable..."
             rows={6}
-            className="w-full resize-y rounded-md border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-sm text-neutral-100 placeholder:text-neutral-500 focus:border-neutral-600 focus:outline-none"
+            className="w-full resize-y rounded-md border border-border bg-canvas px-3 py-1.5 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none"
           />
           <button
             type="submit"
             disabled={uploading || !pasteText.trim()}
-            className="w-full rounded-md bg-cyan-400 px-4 py-1.5 text-sm font-medium text-neutral-950 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {uploading ? "Adding..." : "Add to library"}
           </button>
@@ -124,25 +124,25 @@ export default function DocumentsTab({ documents, loading, onUpload, onDelete }:
       )}
 
       {slow && (
-        <div className="rounded-md border border-neutral-800 bg-neutral-900/50 px-3 py-2 text-xs text-neutral-400">
+        <div className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-muted">
           Still working — the backend runs on free-tier hosting and can
           take up to a minute to wake up after being idle.
         </div>
       )}
 
       {error && (
-        <div className="rounded-md border border-red-900 bg-red-950/50 px-3 py-2 text-sm text-red-300">
+        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
           {error}
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-neutral-800">
+      <div className="overflow-hidden rounded-lg border border-border">
         {loading && (
-          <p className="px-3 py-4 text-sm text-neutral-500">Loading...</p>
+          <p className="px-3 py-4 text-sm text-muted">Loading...</p>
         )}
 
         {!loading && documents.length === 0 && (
-          <p className="px-3 py-4 text-sm text-neutral-500">
+          <p className="px-3 py-4 text-sm text-muted">
             No documents uploaded yet.
           </p>
         )}
@@ -150,15 +150,15 @@ export default function DocumentsTab({ documents, loading, onUpload, onDelete }:
         {documents.map((doc) => (
           <div
             key={doc.id}
-            className="flex items-center justify-between border-b border-neutral-800 px-3 py-2 text-sm last:border-b-0"
+            className="flex items-center justify-between border-b border-border px-3 py-2 text-sm last:border-b-0"
           >
             <div className="min-w-0">
-              <p className="truncate">{doc.filename}</p>
-              <p className="text-xs text-neutral-500">{doc.chunks} chunks</p>
+              <p className="truncate text-ink">{doc.filename}</p>
+              <p className="text-xs text-muted">{doc.chunks} chunks</p>
             </div>
             <button
               onClick={() => onDelete(doc.id)}
-              className="shrink-0 text-red-400 hover:text-red-300"
+              className="shrink-0 text-danger hover:text-danger/80"
             >
               Delete
             </button>

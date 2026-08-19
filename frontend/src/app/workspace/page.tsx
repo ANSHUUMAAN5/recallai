@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
+import gsap from "gsap";
 
 import TopBar from "@/components/TopBar";
 import LeftPanel from "@/components/LeftPanel";
@@ -219,9 +220,48 @@ export default function WorkspacePage() {
     getConfig().then(setConfig).catch(() => setConfig(null));
   }, [refreshDocuments, refreshStats, refreshProjection]);
 
+  // ---------------------------------------------------------
+  // Entrance animation — the workspace should feel like it's
+  // arriving, not just appearing, especially right after the
+  // landing page's own motion.
+  // ---------------------------------------------------------
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      gsap
+        .timeline({ defaults: { ease: "power2.out" } })
+        .from("[data-ws-topbar]", { opacity: 0, y: -10, duration: 0.4 })
+        .from(
+          "[data-ws-left]",
+          { opacity: 0, x: -12, duration: 0.45 },
+          "-=0.25",
+        )
+        .from(
+          "[data-ws-center]",
+          { opacity: 0, scale: 0.98, duration: 0.5 },
+          "-=0.3",
+        )
+        .from(
+          "[data-ws-right]",
+          { opacity: 0, x: 12, duration: 0.45 },
+          "-=0.4",
+        )
+        .from("[data-ws-status]", { opacity: 0, duration: 0.3 }, "-=0.2");
+    }, rootRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <div className="flex h-full flex-col">
-      <TopBar vectorCount={vectorCount} />
+    <div ref={rootRef} className="flex h-full flex-col">
+      <div data-ws-topbar>
+        <TopBar vectorCount={vectorCount} />
+      </div>
 
       <div className="flex min-h-0 flex-1">
         <LeftPanel
@@ -237,9 +277,9 @@ export default function WorkspacePage() {
           loading={runLoading}
         />
 
-        <div className="relative min-h-0 flex-1">
+        <div data-ws-center className="relative min-h-0 flex-1 bg-canvas">
           {projectionPoints.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-neutral-500">
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted">
               No vectors indexed yet. Upload a document from the Documents tab.
             </div>
           )}
@@ -257,19 +297,19 @@ export default function WorkspacePage() {
           )}
 
           {selectedPoint && (
-            <div className="absolute right-4 top-4 w-72 rounded-lg border border-neutral-800 bg-neutral-950/95 p-4 shadow-xl">
+            <div className="absolute right-4 top-4 w-72 rounded-lg border border-border bg-surface/95 p-4 shadow-xl">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">
                   {selectedPoint.source} — p{selectedPoint.page}, c{selectedPoint.chunk}
                 </p>
                 <button
                   onClick={() => setSelectedPoint(null)}
-                  className="shrink-0 text-neutral-500 hover:text-neutral-300"
+                  className="shrink-0 text-muted hover:text-ink-soft"
                 >
                   ✕
                 </button>
               </div>
-              <p className="mt-2 max-h-64 overflow-auto text-sm text-neutral-300">
+              <p className="mt-2 max-h-64 overflow-auto text-sm text-ink-soft">
                 {selectedPoint.text}
               </p>
             </div>
