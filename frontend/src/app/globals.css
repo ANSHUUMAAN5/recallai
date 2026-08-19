@@ -87,6 +87,15 @@ body {
   .animate-marquee { animation: none; }
 }
 
+@keyframes circuit-flow {
+  from { background-position: 0 0; }
+  to { background-position: 0 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pipeline-track] { animation: none !important; }
+}
+
 @keyframes tab-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }

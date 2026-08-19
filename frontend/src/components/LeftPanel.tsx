@@ -51,7 +51,7 @@ export default function LeftPanel({
         <button
           type="submit"
           disabled={loading || !query.trim()}
-          className="w-full rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-ink shadow-sm transition-all hover:scale-[1.02] hover:bg-accent-hover hover:shadow-md active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
         >
           {loading ? "Running..." : "Run"}
         </button>

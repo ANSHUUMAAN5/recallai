@@ -101,7 +101,7 @@ export default function AskTab({ turns, loading, onAsk }: Props) {
         <button
           type="submit"
           disabled={loading || !question.trim()}
-          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-ink shadow-sm transition-all hover:scale-[1.02] hover:bg-accent-hover hover:shadow-md active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
         >
           Ask
         </button>

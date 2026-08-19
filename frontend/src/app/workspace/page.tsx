@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import gsap from "gsap";
 
+import Hero3D from "@/components/landing/Hero3D";
 import TopBar from "@/components/TopBar";
 import LeftPanel from "@/components/LeftPanel";
 import RightPanel from "@/components/RightPanel";
@@ -232,26 +233,17 @@ export default function WorkspacePage() {
       return;
     }
 
+    // Transform-only (no opacity dip): a slow frame during this
+    // ~0.6s window should never leave a control looking disabled
+    // or low-contrast mid-tween — worst case it's just stationary.
     const ctx = gsap.context(() => {
       gsap
         .timeline({ defaults: { ease: "power2.out" } })
-        .from("[data-ws-topbar]", { opacity: 0, y: -10, duration: 0.4 })
-        .from(
-          "[data-ws-left]",
-          { opacity: 0, x: -12, duration: 0.45 },
-          "-=0.25",
-        )
-        .from(
-          "[data-ws-center]",
-          { opacity: 0, scale: 0.98, duration: 0.5 },
-          "-=0.3",
-        )
-        .from(
-          "[data-ws-right]",
-          { opacity: 0, x: 12, duration: 0.45 },
-          "-=0.4",
-        )
-        .from("[data-ws-status]", { opacity: 0, duration: 0.3 }, "-=0.2");
+        .from("[data-ws-topbar]", { y: -16, duration: 0.4 })
+        .from("[data-ws-left]", { x: -24, duration: 0.45 }, "-=0.25")
+        .from("[data-ws-center]", { scale: 0.98, duration: 0.5 }, "-=0.3")
+        .from("[data-ws-right]", { x: 24, duration: 0.45 }, "-=0.4")
+        .from("[data-ws-status]", { y: 10, duration: 0.3 }, "-=0.2");
     }, rootRef);
 
     return () => ctx.revert();
@@ -277,11 +269,18 @@ export default function WorkspacePage() {
           loading={runLoading}
         />
 
-        <div data-ws-center className="relative min-h-0 flex-1 bg-canvas">
+        <div data-ws-center className="relative min-h-0 flex-1 overflow-hidden bg-canvas">
           {projectionPoints.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted">
-              No vectors indexed yet. Upload a document from the Documents tab.
-            </div>
+            <>
+              <div className="absolute inset-0 opacity-70">
+                <Hero3D />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <p className="rounded-full border border-border bg-surface/90 px-5 py-2 text-sm text-muted shadow-sm backdrop-blur-sm">
+                  No vectors indexed yet — upload a document from the Documents tab.
+                </p>
+              </div>
+            </>
           )}
 
           {projectionPoints.length > 0 && (

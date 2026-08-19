@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Cpu, FileStack, SearchCode, Rocket } from "lucide-react";
 import Hero3D from "@/components/landing/Hero3D";
 import MagneticButton from "@/components/landing/MagneticButton";
 import Marquee from "@/components/landing/Marquee";
@@ -13,21 +14,25 @@ const PIPELINE = [
     tag: "01 / ENGINE",
     title: "A vector database, written from scratch",
     body: "Brute-force, KD-tree, and HNSW — the approximate-nearest-neighbor algorithm production vector databases actually run — hand-built in C++. Not a wrapper around Pinecone or FAISS.",
+    icon: Cpu,
   },
   {
     tag: "02 / INGEST",
     title: "PDF or text, chunked and embedded",
     body: "Overlapping character chunks through all-MiniLM-L6-v2 → 384-dimensional embeddings, pushed straight into the engine.",
+    icon: FileStack,
   },
   {
     tag: "03 / RETRIEVE",
     title: "Grounded answers, cited by page and chunk",
     body: "Every answer is traced back to the exact source it came from — strictly grounded when documents exist, honestly labeled when they don't.",
+    icon: SearchCode,
   },
   {
     tag: "04 / SERVE",
     title: "C++ engine, FastAPI, Next.js — deployed for real",
     body: "Three services, actually running in production, with the real infrastructure tradeoffs documented instead of hidden.",
+    icon: Rocket,
   },
 ];
 
@@ -55,21 +60,29 @@ function PipelineStep({
     el.style.setProperty("--my", `${event.clientY - rect.top}px`);
   }
 
+  const Icon = item.icon;
+
   return (
     <div data-pipeline-item className="relative flex gap-6 pb-16 last:pb-0">
       <div className="relative z-10 flex shrink-0 flex-col items-center">
         <div
           data-pipeline-node
-          className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-border-strong bg-canvas font-mono text-sm font-medium text-faint transition-colors duration-500"
+          className="relative flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-border-strong bg-canvas text-faint transition-colors duration-500"
         >
-          {index + 1}
+          <Icon size={22} strokeWidth={1.75} />
+          <span
+            data-pipeline-node-badge
+            className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-border-strong bg-surface font-mono text-[10px] font-medium text-muted transition-colors duration-500"
+          >
+            {index + 1}
+          </span>
         </div>
       </div>
 
       <div
         ref={ref}
         onMouseMove={handleMove}
-        className="group relative -mt-1 flex-1 overflow-hidden rounded-2xl border border-border bg-surface p-6"
+        className="group relative flex-1 overflow-hidden rounded-2xl border border-border bg-surface p-6"
       >
         <div
           className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -191,26 +204,47 @@ export default function LandingPage() {
         );
       }
 
-      // Each node lights up once the scroll line reaches it
+      // Each node (and its number badge) lights up once the scroll
+      // line reaches it
       gsap.utils.toArray<HTMLElement>("[data-pipeline-node]").forEach((node) => {
+        const badge = node.querySelector("[data-pipeline-node-badge]");
+
         ScrollTrigger.create({
           trigger: node,
           start: "top 65%",
           toggleActions: "play none none reverse",
-          onEnter: () =>
+          onEnter: () => {
             gsap.to(node, {
               borderColor: "var(--color-accent)",
               backgroundColor: "var(--color-accent)",
               color: "var(--color-accent-ink)",
               duration: 0.3,
-            }),
-          onLeaveBack: () =>
+            });
+            if (badge) {
+              gsap.to(badge, {
+                borderColor: "var(--color-secondary)",
+                backgroundColor: "var(--color-secondary)",
+                color: "var(--color-accent-ink)",
+                duration: 0.3,
+              });
+            }
+          },
+          onLeaveBack: () => {
             gsap.to(node, {
               borderColor: "var(--color-border-strong)",
               backgroundColor: "var(--color-canvas)",
               color: "var(--color-faint)",
               duration: 0.3,
-            }),
+            });
+            if (badge) {
+              gsap.to(badge, {
+                borderColor: "var(--color-border-strong)",
+                backgroundColor: "var(--color-surface)",
+                color: "var(--color-muted)",
+                duration: 0.3,
+              });
+            }
+          },
         });
       });
 
@@ -428,8 +462,23 @@ export default function LandingPage() {
       {/* Pipeline */}
       {/* ================================================= */}
 
-      <section id="pipeline" className="relative border-t border-border px-6 py-32 sm:px-10">
-        <div className="mx-auto max-w-5xl">
+      <section
+        id="pipeline"
+        className="relative overflow-hidden border-t border-border px-6 py-32 sm:px-10"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage:
+              "radial-gradient(var(--color-border-strong) 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
+            maskImage:
+              "radial-gradient(ellipse 60% 50% at 20% 30%, black, transparent)",
+          }}
+          aria-hidden="true"
+        />
+
+        <div className="relative mx-auto max-w-5xl">
           <p
             data-reveal
             className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-faint"
@@ -441,16 +490,21 @@ export default function LandingPage() {
           </h2>
 
           <div data-pipeline-list className="relative max-w-2xl">
-            <div className="absolute left-[21px] top-2 bottom-16 w-px bg-border" />
+            <div className="absolute left-[27px] top-3 bottom-16 w-0.5 bg-border" />
             <div
               data-pipeline-track
-              className="absolute left-[21px] top-2 w-px origin-top bg-accent"
-              style={{ height: "0%" }}
+              className="absolute left-[27px] top-3 w-0.5 origin-top"
+              style={{
+                height: "0%",
+                backgroundImage:
+                  "repeating-linear-gradient(0deg, var(--color-accent) 0, var(--color-accent) 6px, transparent 6px, transparent 11px)",
+                animation: "circuit-flow 0.6s linear infinite",
+              }}
             />
             <div
               data-pipeline-pulse
-              className="absolute left-[21px] h-2 w-2 -translate-x-1/2 rounded-full bg-secondary shadow-[0_0_8px_var(--color-secondary)]"
-              style={{ top: "0.5rem" }}
+              className="absolute left-[27px] h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-secondary shadow-[0_0_10px_var(--color-secondary)]"
+              style={{ top: "0.75rem" }}
             />
 
             {PIPELINE.map((item, index) => (

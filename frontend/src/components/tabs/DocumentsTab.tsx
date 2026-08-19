@@ -73,7 +73,7 @@ export default function DocumentsTab({ documents, loading, onUpload, onDelete }:
   return (
     <div className="space-y-4 p-4">
       <div className="flex gap-2">
-        <label className="flex-1 cursor-pointer rounded-md bg-accent px-4 py-2 text-center text-sm font-medium text-accent-ink hover:bg-accent-hover">
+        <label className="flex-1 cursor-pointer rounded-md bg-accent px-4 py-2 text-center text-sm font-medium text-accent-ink shadow-sm transition-all hover:scale-[1.02] hover:bg-accent-hover hover:shadow-md active:scale-[0.97]">
           {uploading ? "Uploading..." : "Upload file"}
           <input
             ref={fileInputRef}
@@ -116,7 +116,7 @@ export default function DocumentsTab({ documents, loading, onUpload, onDelete }:
           <button
             type="submit"
             disabled={uploading || !pasteText.trim()}
-            className="w-full rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-accent-ink shadow-sm transition-all hover:scale-[1.02] hover:bg-accent-hover hover:shadow-md active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
           >
             {uploading ? "Adding..." : "Add to library"}
           </button>
