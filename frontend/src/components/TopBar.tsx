@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSystemStatus } from "@/lib/useSystemStatus";
 
 interface Props {
@@ -11,11 +12,19 @@ export default function TopBar({ vectorCount }: Props) {
 
   return (
     <div className="flex items-center justify-between border-b border-neutral-800 px-6 py-3">
-      <div className="flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full bg-cyan-400" />
-        <span className="text-sm font-semibold tracking-widest text-neutral-100">
-          RECALLAI
-        </span>
+      <div className="flex items-center gap-4">
+        <Link
+          href="/"
+          className="text-xs text-neutral-500 transition-colors hover:text-cyan-400"
+        >
+          ← Home
+        </Link>
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-cyan-400" />
+          <span className="text-sm font-semibold tracking-widest text-neutral-100">
+            RECALLAI
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
