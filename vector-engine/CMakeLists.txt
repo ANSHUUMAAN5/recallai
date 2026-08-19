@@ -38,3 +38,6 @@ if(BUILD_TESTS)
     add_executable(test_vector_db src/test_vector_db.cpp)
     target_link_libraries(test_vector_db PRIVATE recallai_core)
 endif()
+
+add_executable(benchmark src/benchmark.cpp)
+target_link_libraries(benchmark PRIVATE recallai_core)

@@ -1,0 +1,107 @@
+{
+  "dimensions": 384,
+  "k": 10,
+  "queries_per_size": 50,
+  "results": [
+    {
+      "corpus_size": 100,
+      "algorithms": [
+        {
+          "name": "bruteforce",
+          "recall_at_k": 1,
+          "avg_latency_us": 42.5584
+        },
+        {
+          "name": "kdtree",
+          "recall_at_k": 1,
+          "avg_latency_us": 44.8816
+        },
+        {
+          "name": "hnsw",
+          "recall_at_k": 1,
+          "avg_latency_us": 73.17
+        }
+      ]
+    },
+    {
+      "corpus_size": 500,
+      "algorithms": [
+        {
+          "name": "bruteforce",
+          "recall_at_k": 1,
+          "avg_latency_us": 182.219
+        },
+        {
+          "name": "kdtree",
+          "recall_at_k": 1,
+          "avg_latency_us": 183.653
+        },
+        {
+          "name": "hnsw",
+          "recall_at_k": 0.99,
+          "avg_latency_us": 226.76
+        }
+      ]
+    },
+    {
+      "corpus_size": 1000,
+      "algorithms": [
+        {
+          "name": "bruteforce",
+          "recall_at_k": 1,
+          "avg_latency_us": 368.752
+        },
+        {
+          "name": "kdtree",
+          "recall_at_k": 1,
+          "avg_latency_us": 365.917
+        },
+        {
+          "name": "hnsw",
+          "recall_at_k": 0.938,
+          "avg_latency_us": 361.186
+        }
+      ]
+    },
+    {
+      "corpus_size": 2500,
+      "algorithms": [
+        {
+          "name": "bruteforce",
+          "recall_at_k": 1,
+          "avg_latency_us": 933.85
+        },
+        {
+          "name": "kdtree",
+          "recall_at_k": 1,
+          "avg_latency_us": 954.792
+        },
+        {
+          "name": "hnsw",
+          "recall_at_k": 0.742,
+          "avg_latency_us": 576.845
+        }
+      ]
+    },
+    {
+      "corpus_size": 5000,
+      "algorithms": [
+        {
+          "name": "bruteforce",
+          "recall_at_k": 1,
+          "avg_latency_us": 1917
+        },
+        {
+          "name": "kdtree",
+          "recall_at_k": 1,
+          "avg_latency_us": 2196.48
+        },
+        {
+          "name": "hnsw",
+          "recall_at_k": 0.582,
+          "avg_latency_us": 843.917
+        }
+      ]
+    }
+  ]
+}

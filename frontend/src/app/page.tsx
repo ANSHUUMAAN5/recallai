@@ -8,6 +8,7 @@ import { Cpu, FileStack, SearchCode, Rocket } from "lucide-react";
 import Hero3D from "@/components/landing/Hero3D";
 import MagneticButton from "@/components/landing/MagneticButton";
 import Marquee from "@/components/landing/Marquee";
+import BenchmarkChart from "@/components/landing/BenchmarkChart";
 
 const PIPELINE = [
   {
@@ -119,6 +120,16 @@ export default function LandingPage() {
         gsap.utils.toArray<HTMLElement>("[data-stat-value]").forEach((el) => {
           el.textContent = el.getAttribute("data-stat-value");
         });
+        gsap.utils
+          .toArray<SVGRectElement>("[data-benchmark-bar]")
+          .forEach((bar) => {
+            gsap.set(bar, {
+              attr: {
+                y: bar.getAttribute("data-target-y") ?? "0",
+                height: bar.getAttribute("data-target-height") ?? "0",
+              },
+            });
+          });
         return;
       }
 
@@ -269,6 +280,32 @@ export default function LandingPage() {
           },
         });
       });
+
+      // Benchmark bars grow in from zero the first time the
+      // charts scroll into view
+      const benchmarkCharts = document.querySelector("[data-benchmark-charts]");
+      if (benchmarkCharts) {
+        ScrollTrigger.create({
+          trigger: benchmarkCharts,
+          start: "top 80%",
+          once: true,
+          onEnter: () => {
+            gsap.utils
+              .toArray<SVGRectElement>("[data-benchmark-bar]")
+              .forEach((bar, i) => {
+                gsap.to(bar, {
+                  attr: {
+                    y: bar.getAttribute("data-target-y") ?? "0",
+                    height: bar.getAttribute("data-target-height") ?? "0",
+                  },
+                  duration: 0.8,
+                  delay: (i % 15) * 0.03,
+                  ease: "power2.out",
+                });
+              });
+          },
+        });
+      }
 
       // Hero graph drifts slightly with scroll for depth
       gsap.to("[data-hero-3d]", {
@@ -510,6 +547,47 @@ export default function LandingPage() {
             {PIPELINE.map((item, index) => (
               <PipelineStep key={item.tag} item={item} index={index} />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================= */}
+      {/* Benchmarks */}
+      {/* ================================================= */}
+
+      <section className="border-t border-border px-6 py-32 sm:px-10">
+        <div className="mx-auto max-w-5xl">
+          <p
+            data-reveal
+            className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-faint"
+          >
+            (Measured, not claimed)
+          </p>
+          <h2 data-reveal className="mb-4 max-w-xl text-3xl font-medium text-ink sm:text-4xl">
+            HNSW is approximate. Here&apos;s the actual tradeoff.
+          </h2>
+          <p data-reveal className="mb-12 max-w-2xl text-[15px] leading-relaxed text-muted">
+            Three algorithms exist here to be compared, not just listed —
+            benchmarked against each other on 384-D synthetic vectors at
+            growing corpus sizes, with brute-force&apos;s exact result as
+            ground truth.
+          </p>
+
+          <div data-reveal className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+            <BenchmarkChart />
+          </div>
+
+          <div data-reveal className="mt-8 rounded-xl border border-secondary/30 bg-secondary-soft p-5">
+            <p className="text-sm leading-relaxed text-ink-soft">
+              <span className="font-medium text-ink">The honest finding:</span>{" "}
+              KD-tree stays exact but never gets meaningfully faster than
+              brute-force past a few hundred points — the curse of
+              dimensionality in practice, not just in theory. HNSW gets over
+              2x faster at 5,000 vectors, but recall drops to ~58% with a
+              fixed <code className="font-mono text-[13px]">ef_search=50</code> —
+              the search beam doesn&apos;t widen as the corpus grows. That's
+              a real, fixable tuning problem, not a flaw in the algorithm.
+            </p>
           </div>
         </div>
       </section>
